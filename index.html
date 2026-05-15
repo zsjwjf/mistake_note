@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>公考错题本 · 自动同步版</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f5f4;
+    --bg-tertiary: #eeece9;
+    --text-primary: #1a1a18;
+    --text-secondary: #6b6b67;
+    --text-hint: #a0a09b;
+    --border-light: rgba(0,0,0,0.12);
+    --border-mid: rgba(0,0,0,0.22);
+    --border-strong: rgba(0,0,0,0.32);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --accent: #1a1a18;
+    --danger-bg: #FCEBEB;
+    --danger-text: #A32D2D;
+    --warn-bg: #FAEEDA;
+    --warn-text: #854F0B;
+    --success-bg: #EAF3DE;
+    --success-text: #3B6D11;
+    --info-bg: #E6F1FB;
+    --info-text: #0C447C;
+    --purple-bg: #EEEDFE;
+    --purple-text: #3C3489;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-primary: #1e1e1c;
+      --bg-secondary: #2a2a27;
+      --bg-tertiary: #323230;
+      --text-primary: #f0ede8;
+      --text-secondary: #a0a09b;
+      --text-hint: #6b6b67;
+      --border-light: rgba(255,255,255,0.10);
+      --border-mid: rgba(255,255,255,0.18);
+      --border-strong: rgba(255,255,255,0.28);
+      --accent: #f0ede8;
+      --danger-bg: #501313;
+      --danger-text: #F7C1C1;
+      --warn-bg: #412402;
+      --warn-text: #FAC775;
+      --success-bg: #173404;
+      --success-text: #C0DD97;
+      --info-bg: #042C53;
+      --info-text: #B5D4F4;
+      --purple-bg: #26215C;
+      --purple-text: #CECBF6;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .container { max-width: 800px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+
+  /* Header */
+  .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 10px; }
+  .top-bar h1 { font-size: 22px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+  .top-bar h1 i { font-size: 22px; }
+  .top-bar-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border-light); margin-bottom: 1.5rem; }
+  .tab { padding: 9px 18px; font-size: 14px; cursor: pointer; border: none; background: none; color: var(--text-secondary); border-bottom: 2px solid transparent; transition: all 0.15s; font-family: inherit; }
+  .tab:hover { color: var(--text-primary); }
+  .tab.active { color: var(--text-primary); border-bottom-color: var(--text-primary); font-weight: 500; }
+
+  /* Pages */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Filters */
+  .filters { display: flex; gap: 8px; margin-bottom: 1.2rem; flex-wrap: wrap; align-items: center; }
+  .filters select, .filters input[type="text"] {
+    font-size: 13px; padding: 7px 11px;
+    border-radius: var(--radius-md); border: 1px solid var(--border-light);
+    background: var(--bg-primary); color: var(--text-primary);
+    font-family: inherit;
+  }
+  .filters input[type="text"] { flex: 1; min-width: 160px; }
+  .filters select:focus, .filters input:focus { outline: 2px solid var(--border-mid); outline-offset: 1px; }
+
+  /* Cards */
+  .cards { display: flex; flex-direction: column; gap: 12px; }
+  .card {
+    background: var(--bg-primary); border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg); padding: 1rem 1.25rem;
+  }
+  .card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+  .card-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+
+  .badge { font-size: 11px; padding: 3px 9px; border-radius: 12px; font-weight: 500; }
+  .badge-subject { background: var(--info-bg); color: var(--info-text); }
+  .badge-type { background: var(--purple-bg); color: var(--purple-text); }
+  .badge-mastery-0 { background: var(--danger-bg); color: var(--danger-text); }
+  .badge-mastery-1 { background: var(--warn-bg); color: var(--warn-text); }
+  .badge-mastery-2 { background: var(--success-bg); color: var(--success-text); }
+
+  .card-actions { display: flex; gap: 4px; flex-shrink: 0; }
+  .icon-btn {
+    background: none; border: none; cursor: pointer; color: var(--text-secondary);
+    font-size: 17px; padding: 5px 7px; border-radius: var(--radius-md);
+    display: flex; align-items: center; transition: background 0.12s;
+  }
+  .icon-btn:hover { background: var(--bg-secondary); color: var(--text-primary); }
+
+  .section-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; font-weight: 500; letter-spacing: 0.02em; }
+  .content-box {
+    background: var(--bg-secondary); border-radius: var(--radius-md);
+    padding: 10px 12px; font-size: 13px; color: var(--text-primary);
+    line-height: 1.7; white-space: pre-wrap; word-break: break-all;
+  }
+  .content-box.error-box { background: var(--danger-bg); color: var(--danger-text); }
+  .content-box img { max-width: 100%; border-radius: 4px; margin: 4px 0; cursor: pointer; border: 1px solid var(--border-light); display: block; }
+  .content-image { max-width: 100%; border-radius: var(--radius-md); margin-top: 8px; border: 1px solid var(--border-light); display: block; }
+
+  .divider { margin: 10px 0; border: none; border-top: 1px solid var(--border-light); }
+
+  .tags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
+  .tag {
+    font-size: 11px; padding: 3px 9px;
+    background: var(--bg-secondary); border-radius: 10px;
+    color: var(--text-secondary); border: 1px solid var(--border-light);
+  }
+
+  .review-row { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; flex-wrap: wrap; gap: 8px; }
+  .review-info { font-size: 12px; color: var(--text-hint); }
+
+  .mastery-btns { display: flex; gap: 5px; }
+  .m-btn {
+    font-size: 11px; padding: 4px 11px; border-radius: 10px;
+    border: 1px solid var(--border-mid); cursor: pointer;
+    background: none; color: var(--text-secondary); font-family: inherit;
+    transition: background 0.12s;
+  }
+  .m-btn:hover { background: var(--bg-secondary); }
+  .m-btn.active-0 { background: var(--danger-bg); color: var(--danger-text); border-color: #F7C1C1; }
+  .m-btn.active-1 { background: var(--warn-bg); color: var(--warn-text); border-color: #FAC775; }
+  .m-btn.active-2 { background: var(--success-bg); color: var(--success-text); border-color: #C0DD97; }
+
+  /* Buttons */
+  .btn {
+    font-size: 13px; padding: 8px 16px; border-radius: var(--radius-md);
+    border: 1px solid var(--border-mid); background: var(--bg-primary);
+    color: var(--text-primary); cursor: pointer; display: inline-flex;
+    align-items: center; gap: 6px; font-family: inherit; transition: background 0.12s;
+  }
+  .btn:hover { background: var(--bg-secondary); }
+  .btn-primary {
+    background: var(--text-primary); color: var(--bg-primary);
+    border-color: var(--text-primary);
+  }
+  .btn-primary:hover { opacity: 0.82; background: var(--text-primary); }
+  .btn-danger { background: var(--danger-bg); color: var(--danger-text); border-color: #F7C1C1; }
+  .btn-danger:hover { opacity: 0.85; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45); z-index: 100;
+    align-items: flex-start; justify-content: center;
+    padding: 40px 16px;
+    overflow-y: auto;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--bg-primary); border-radius: var(--radius-xl);
+    padding: 1.75rem; width: 100%; max-width: 580px;
+    border: 1px solid var(--border-mid);
+    position: relative; margin: auto;
+  }
+  .modal h2 { font-size: 17px; font-weight: 600; margin-bottom: 1.25rem; }
+
+  .form-row { margin-bottom: 1rem; }
+  .form-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 5px; display: block; font-weight: 500; }
+  .form-input {
+    width: 100%; font-size: 13px; padding: 9px 11px;
+    border-radius: var(--radius-md); border: 1px solid var(--border-mid);
+    background: var(--bg-primary); color: var(--text-primary); font-family: inherit;
+  }
+  .form-input:focus { outline: 2px solid var(--border-strong); outline-offset: 1px; border-color: transparent; }
+  
+  .rich-editor {
+    min-height: 80px; 
+    max-height: 350px;
+    overflow-y: auto; 
+    cursor: text;
+    white-space: pre-wrap;
+    outline: none;
+    line-height: 1.6;
+  }
+  .rich-editor:focus { border-color: transparent; outline: 2px solid var(--border-strong); outline-offset: 1px; }
+  .rich-editor[placeholder]:empty:before { content: attr(placeholder); color: var(--text-hint); pointer-events: none; display: block; }
+  .rich-editor img { max-width: 100%; border-radius: 4px; margin: 4px 0; cursor: pointer; border: 1px solid var(--border-light); display: block; }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-light); }
+
+  .select-with-add { display: flex; gap: 6px; align-items: center; }
+  .select-with-add select.form-input { flex: 1; }
+  .quick-add-btn {
+    flex-shrink: 0; width: 32px; height: 32px; padding: 0;
+    border-radius: var(--radius-md); border: 1px solid var(--border-light);
+    background: var(--bg-secondary); cursor: pointer;
+    color: var(--text-secondary); font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.12s;
+  }
+  .quick-add-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+
+  /* Management modal */
+  .manage-hint {
+    font-size: 13px; color: var(--text-secondary); margin-bottom: 1rem;
+    line-height: 1.5; background: var(--bg-secondary); padding: 10px 14px; border-radius: var(--radius-md);
+  }
+  .manage-list { display: flex; flex-direction: column; gap: 4px; max-height: 50vh; overflow-y: auto; }
+  .manage-subject-block { background: var(--bg-secondary); border-radius: var(--radius-lg); padding: 10px 14px; border: 1px solid var(--border-light); }
+  .manage-subject-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-bottom: 8px; margin-bottom: 6px; border-bottom: 1px solid var(--border-light); }
+  .manage-subject-name { font-size: 14px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px; }
+  .manage-subject-name i { font-size: 16px; color: var(--info-text); }
+  .manage-subject-actions { display: flex; gap: 2px; }
+  .manage-subject-actions .icon-btn { font-size: 15px; padding: 4px 6px; }
+  .manage-types { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding-left: 4px; }
+  .manage-type-tag { font-size: 12px; padding: 4px 10px; background: var(--bg-primary); border: 1px solid var(--border-light); border-radius: 14px; color: var(--text-primary); display: flex; align-items: center; gap: 4px; }
+  .manage-type-del { background: none; border: none; cursor: pointer; color: var(--text-hint); font-size: 14px; line-height: 1; padding: 0; display: flex; align-items: center; }
+  .manage-type-del:hover { color: var(--danger-text); }
+  .manage-add-type { font-size: 12px; color: var(--text-secondary); cursor: pointer; padding: 4px 10px; border: 1px dashed var(--border-mid); border-radius: 14px; transition: all 0.12s; }
+  .manage-add-type:hover { border-color: var(--text-secondary); color: var(--text-primary); }
+  .manage-add-subject { margin-top: 10px; font-size: 13px; cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; gap: 5px; padding: 8px 0; }
+  .manage-add-subject:hover { color: var(--text-primary); }
+
+  /* Stats */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 10px; margin-bottom: 1.5rem; }
+  .stat-card { background: var(--bg-primary); border-radius: var(--radius-md); padding: 14px 16px; border: 1px solid var(--border-light); }
+  .stat-val { font-size: 28px; font-weight: 600; color: var(--text-primary); }
+  .stat-lbl { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+  .section-title { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 12px; }
+  .chart-wrap { background: var(--bg-primary); border: 1px solid var(--border-light); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 12px; }
+  .chart-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+  .chart-bar-label { font-size: 12px; color: var(--text-secondary); width: 88px; text-align: right; flex-shrink: 0; }
+  .chart-bar-track { flex: 1; background: var(--bg-secondary); border-radius: 4px; height: 20px; overflow: hidden; }
+  .chart-bar-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 10px; font-size: 11px; font-weight: 600; color: white; transition: width 0.4s ease; min-width: 30px; }
+
+  .empty-state { text-align: center; padding: 3.5rem 1rem; color: var(--text-secondary); }
+  .empty-state i { font-size: 40px; display: block; margin-bottom: 10px; color: var(--text-hint); }
+  .empty-state p { font-size: 14px; }
+
+  .source-text { font-size: 11px; color: var(--text-hint); margin-bottom: 5px; }
+
+  @media (max-width: 500px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .top-bar { flex-direction: column; align-items: flex-start; }
+    .top-bar-actions { width: 100%; justify-content: flex-end; }
+    .filters { flex-direction: column; }
+    .filters input[type="text"] { width: 100%; }
+  }
+
+  .img-viewer-wrap { position: relative; display: inline-block; max-width: 100%; margin-top: 8px; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-light); background: var(--bg-tertiary); cursor: default; touch-action: none; }
+  .img-viewer-wrap .content-image { margin-top: 0; border: none; transition: transform 0.1s ease-out; transform-origin: center; display: block; user-select: none; -webkit-user-drag: none; }
+  .img-viewer-wrap.zoomed .content-image { cursor: grab; }
+  .img-viewer-wrap.zoomed .content-image:active { cursor: grabbing; }
+  .img-viewer-toolbar { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; background: rgba(0, 0, 0, 0.6); padding: 4px; border-radius: var(--radius-md); opacity: 0; transition: opacity 0.2s; z-index: 10; }
+  .img-viewer-wrap:hover .img-viewer-toolbar { opacity: 1; }
+  .img-viewer-toolbar .icon-btn { color: #fff; padding: 4px; font-size: 18px; }
+  .img-viewer-toolbar .icon-btn:hover { background: rgba(255, 255, 255, 0.25); color: #fff; }
+
+  .fs-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); z-index: 10000; display: none; align-items: center; justify-content: center; overflow: hidden; user-select: none; }
+  .fs-overlay.open { display: flex; }
+  .fs-img { max-width: 90%; max-height: 90vh; object-fit: contain; cursor: grab; transition: transform 0.1s ease-out; }
+  .fs-img:active { cursor: grabbing; }
+  .fs-close-btn { position: absolute; top: 20px; right: 25px; background: rgba(255, 255, 255, 0.1); border: none; color: white; font-size: 24px; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10001; transition: background 0.2s; }
+  .fs-close-btn:hover { background: rgba(255, 255, 255, 0.3); }
+
+  .dlg-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.38); z-index: 9000;
+    align-items: center; justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(2px);
+    animation: dlg-fade-in 0.12s ease;
+  }
+  .dlg-overlay.open { display: flex; }
+  @keyframes dlg-fade-in { from { opacity: 0; } to { opacity: 1; } }
+  .dlg-box {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem 1.75rem;
+    width: 100%; max-width: 400px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+    animation: dlg-slide-up 0.15s ease;
+  }
+  @keyframes dlg-slide-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .dlg-icon { font-size: 26px; margin-bottom: 10px; }
+  .dlg-icon.warn { color: var(--warn-text); }
+  .dlg-icon.danger { color: var(--danger-text); }
+  .dlg-icon.info { color: var(--info-text); }
+  .dlg-title { font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
+  .dlg-msg { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.25rem; }
+  .dlg-input-wrap { margin-bottom: 1.25rem; }
+  .dlg-input {
+    width: 100%; font-size: 14px; padding: 9px 12px;
+    border-radius: var(--radius-md); border: 1px solid var(--border-mid);
+    background: var(--bg-secondary); color: var(--text-primary);
+    font-family: inherit; outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .dlg-input:focus { border-color: var(--border-strong); box-shadow: 0 0 0 2px var(--border-light); }
+  .dlg-footer { display: flex; justify-content: flex-end; gap: 8px; }
+  .dlg-footer .btn { font-size: 13px; padding: 8px 18px; }
+
+  .sync-status { font-size: 12px; color: var(--text-hint); display: flex; align-items: center; gap: 5px; }
+  .sync-status i { font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="top-bar">
+    <h1><i class="ti ti-notebook"></i> 公考错题本</h1>
+    <div class="top-bar-actions">
+      <button class="btn" onclick="openWebDAVSetup()"><i class="ti ti-cloud-upload"></i> 网盘同步</button>
+      <button class="btn" onclick="openManageModal()"><i class="ti ti-settings"></i> 管理科目</button>
+      <button class="btn" onclick="exportBackup()"><i class="ti ti-download"></i> 导出备份</button>
+      <button class="btn" onclick="document.getElementById('import-input').click()"><i class="ti ti-upload"></i> 导入</button>
+      <input type="file" id="import-input" style="display:none" onchange="importBackup(this)" accept=".json">
+      <button class="btn btn-primary" onclick="openModal()"><i class="ti ti-plus"></i> 添加错题</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('list',this)">全部错题</button>
+    <button class="tab" onclick="switchTab('review',this)">待复习</button>
+    <button class="tab" onclick="switchTab('stats',this)">数据分析</button>
+  </div>
+
+  <div id="page-list" class="page active">
+    <div class="filters">
+      <input type="text" id="search" placeholder="搜索关键词…" oninput="renderList()" />
+      <select id="filter-subject" onchange="renderList()"><option value="">全部科目</option></select>
+      <select id="filter-type" onchange="renderList()"><option value="">全部题型</option></select>
+      <select id="filter-mastery" onchange="renderList()">
+        <option value="">所有掌握度</option>
+        <option value="0">未掌握</option><option value="1">模糊</option><option value="2">已掌握</option>
+      </select>
+    </div>
+    <div class="cards" id="card-list"></div>
+  </div>
+
+  <div id="page-review" class="page">
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:1rem;">显示"未掌握"和"模糊"的题目，按添加时间排序。</p>
+    <div class="cards" id="review-list"></div>
+  </div>
+
+  <div id="page-stats" class="page">
+    <div class="stat-grid" id="stat-grid"></div>
+    <div class="chart-wrap">
+      <p class="section-title">各科目错题数</p>
+      <div id="chart-subject"></div>
+    </div>
+    <div class="chart-wrap">
+      <p class="section-title">掌握度分布</p>
+      <div id="chart-mastery"></div>
+    </div>
+    <div class="chart-wrap">
+      <p class="section-title">题型分布</p>
+      <div id="chart-type"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 错题编辑模态框 -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h2 id="modal-title">添加错题</h2>
+    <div class="form-grid">
+      <div class="form-row">
+        <label class="form-label">科目 *</label>
+        <div class="select-with-add">
+          <select class="form-input" id="f-subject" onchange="onSubjectChange()"></select>
+          <button class="quick-add-btn" onclick="quickAddSubject()" title="快速添加科目"><i class="ti ti-plus"></i></button>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">题型 *</label>
+        <div class="select-with-add">
+          <select class="form-input" id="f-type"></select>
+          <button class="quick-add-btn" onclick="quickAddType()" title="快速添加题型"><i class="ti ti-plus"></i></button>
+        </div>
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">题目内容（支持混排文字与直接粘贴多张图片）</label>
+      <div class="form-input rich-editor" id="f-question" contenteditable="true" placeholder="在此直接输入文字，或使用 Ctrl+V 粘贴截图..."></div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">我的错因 / 错误分析</label>
+      <div class="form-input rich-editor" id="f-error" contenteditable="true" placeholder="当时哪里想错了？同样支持粘贴图片。" style="min-height:60px;"></div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">正确解题思路 *（支持混排文字与直接粘贴多张图片）</label>
+      <div class="form-input rich-editor" id="f-solution" contenteditable="true" placeholder="写下正确的解法、公式、思路，或直接粘贴解析截图..."></div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">知识点标签（逗号分隔）</label>
+      <input class="form-input" id="f-tags" placeholder="例：增长率, 基期量, 速算技巧" />
+    </div>
+    <div class="form-row">
+      <label class="form-label">来源（可选）</label>
+      <input class="form-input" id="f-source" placeholder="2024国考真题 / 粉笔模考第3季…" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveItem()"><i class="ti ti-check"></i> 保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 科目题型管理 -->
+<div class="modal-overlay" id="manage-overlay">
+  <div class="modal" style="max-width:640px;">
+    <h2>管理科目与题型</h2>
+    <div class="manage-hint">
+      在此配置科目及其对应的题型分类。<strong>添加错题时</strong>，题型选项将根据所选科目动态变化。
+    </div>
+    <div class="manage-list" id="manage-content"></div>
+    <div class="manage-add-subject" onclick="promptAddSubject()">
+      <i class="ti ti-plus"></i> 添加科目
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeManageModal()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- WebDAV 设置模态框 -->
+<div class="modal-overlay" id="webdav-modal">
+  <div class="modal">
+    <h2><i class="ti ti-cloud"></i> 网盘同步设置 (WebDAV)</h2>
+    <div class="manage-hint">
+      支持任何 WebDAV 协议网盘（推荐坚果云）。<br>
+      <strong>服务器地址示例</strong>：<code>https://dav.jianguoyun.com/dav/错题本/sync.json</code><br>
+      建议在网盘内先创建好文件夹，再填写完整路径（包含文件名）。
+    </div>
+    <div class="form-row">
+      <label class="form-label">WebDAV 地址（完整文件URL）</label>
+      <input class="form-input" id="webdav-url" placeholder="https://dav.jianguoyun.com/dav/.../sync.json" />
+    </div>
+    <div class="form-row">
+      <label class="form-label">用户名（一般为账号/邮箱）</label>
+      <input class="form-input" id="webdav-username" placeholder="your@email.com" />
+    </div>
+    <div class="form-row">
+      <label class="form-label">密码 / 应用密码</label>
+      <input class="form-input" type="password" id="webdav-password" placeholder="应用密码（建议使用专用密码）" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeWebDAVSetup()">取消</button>
+      <button class="btn btn-primary" onclick="saveWebDAVConfigAndSync()"><i class="ti ti-cloud-upload"></i> 保存并立即同步</button>
+    </div>
+  </div>
+</div>
+
+<!-- 自定义对话框 -->
+<div class="dlg-overlay" id="dlg-overlay">
+  <div class="dlg-box">
+    <div class="dlg-icon" id="dlg-icon"></div>
+    <div class="dlg-title" id="dlg-title"></div>
+    <div class="dlg-msg" id="dlg-msg"></div>
+    <div class="dlg-input-wrap" id="dlg-input-wrap" style="display:none">
+      <input class="dlg-input" id="dlg-input" type="text" />
+    </div>
+    <div class="dlg-footer" id="dlg-footer"></div>
+  </div>
+</div>
+
+<div class="fs-overlay" id="fs-overlay">
+  <button class="fs-close-btn" onclick="closeFullscreen()" title="关闭 (Esc)">✕</button>
+  <img id="fs-img" class="fs-img" src="" alt="全屏图片" draggable="false" />
+</div>
+
+<script>
+// ========================= 自定义对话框 =========================
+let _dlgResolve = null;
+function _dlgClose() { document.getElementById('dlg-overlay').classList.remove('open'); }
+function _dlgShow({ icon = '', iconClass = 'info', title = '', msg = '', showInput = false, defaultVal = '', confirmLabel = '确定', confirmClass = 'btn-primary', showCancel = true }) {
+  return new Promise(resolve => {
+    _dlgResolve = resolve;
+    document.getElementById('dlg-icon').className = 'dlg-icon ' + iconClass;
+    document.getElementById('dlg-icon').innerHTML = icon ? `<i class="ti ${icon}"></i>` : '';
+    document.getElementById('dlg-title').textContent = title;
+    document.getElementById('dlg-msg').textContent = msg;
+    const inputWrap = document.getElementById('dlg-input-wrap');
+    const input = document.getElementById('dlg-input');
+    if (showInput) {
+      inputWrap.style.display = '';
+      input.value = defaultVal || '';
+      setTimeout(() => { input.focus(); input.select(); }, 80);
+    } else { inputWrap.style.display = 'none'; }
+    const footer = document.getElementById('dlg-footer');
+    footer.innerHTML = '';
+    if (showCancel) {
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'btn';
+      cancelBtn.textContent = '取消';
+      cancelBtn.onclick = () => { _dlgClose(); resolve(null); };
+      footer.appendChild(cancelBtn);
+    }
+    const okBtn = document.createElement('button');
+    okBtn.className = 'btn ' + confirmClass;
+    okBtn.textContent = confirmLabel;
+    okBtn.onclick = () => { const val = showInput ? input.value.trim() : true; _dlgClose(); resolve(val); };
+    footer.appendChild(okBtn);
+    input.onkeydown = (e) => { if (e.key === 'Enter') okBtn.click(); if (e.key === 'Escape') { _dlgClose(); resolve(null); } };
+    document.getElementById('dlg-overlay').classList.add('open');
+  });
+}
+document.getElementById('dlg-overlay').addEventListener('click', function(e) { if (e.target === this) { _dlgClose(); if (_dlgResolve) _dlgResolve(null); } });
+function uiAlert(msg, { title = '提示', icon = 'ti-info-circle', iconClass = 'info' } = {}) { return _dlgShow({ icon, iconClass, title, msg, showCancel: false, confirmLabel: '好的', confirmClass: 'btn-primary' }); }
+function uiConfirm(msg, { title = '请确认', icon = 'ti-alert-triangle', iconClass = 'warn', confirmLabel = '确定', confirmClass = 'btn-danger' } = {}) { return _dlgShow({ icon, iconClass, title, msg, showCancel: true, confirmLabel, confirmClass }); }
+function uiPrompt(msg, { title = '请输入', icon = 'ti-edit', iconClass = 'info', defaultVal = '' } = {}) { return _dlgShow({ icon, iconClass, title, msg, showInput: true, defaultVal, showCancel: true, confirmLabel: '确定', confirmClass: 'btn-primary' }); }
+
+// ========================= 核心数据 =========================
+const COLORS = ['#378ADD','#7F77DD','#D85A30','#1D9E75','#BA7517','#D4537E','#639922','#E24B4A'];
+const MASTERY_LABEL = ['未掌握','模糊','已掌握'];
+let db = [];
+const DB_NAME = 'GongkaoBook';
+const STORE_NAME = 'mistakes';
+let idb = null;
+let editId = null;
+let subjectTypeConfig = {};
+
+// 初始化 IndexedDB
+function initDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 4);
+    request.onerror = e => reject(e);
+    request.onsuccess = e => { idb = e.target.result; resolve(idb); };
+    request.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+      if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings');
+    };
+  });
+}
+async function saveToIDB(item) {
+  const tx = idb.transaction(STORE_NAME, 'readwrite');
+  return new Promise(r => { tx.objectStore(STORE_NAME).put(item).onsuccess = () => r(); });
+}
+async function deleteFromIDB(id) {
+  const tx = idb.transaction(STORE_NAME, 'readwrite');
+  return new Promise(r => { tx.objectStore(STORE_NAME).delete(id).onsuccess = () => r(); });
+}
+async function getAllFromIDB() {
+  const tx = idb.transaction(STORE_NAME, 'readonly');
+  return new Promise(r => { tx.objectStore(STORE_NAME).getAll().onsuccess = e => r(e.target.result); });
+}
+async function saveConfigToIDB(config) {
+  const tx = idb.transaction('settings', 'readwrite');
+  return new Promise(r => { tx.objectStore('settings').put(config, 'subjectConfig'); tx.oncomplete = () => r(); });
+}
+async function loadConfigFromIDB() {
+  if (!idb) await initDB();
+  const tx = idb.transaction('settings', 'readonly');
+  return new Promise(r => { const req = tx.objectStore('settings').get('subjectConfig'); req.onsuccess = () => r(req.result); });
+}
+async function saveConfig() {
+  localStorage.setItem('qb_config_v2', JSON.stringify(subjectTypeConfig));
+  await saveConfigToIDB(subjectTypeConfig);
+}
+
+// 辅助函数
+function getAllSubjects() { const set = new Set(Object.keys(subjectTypeConfig)); db.forEach(d => { if (d.subject) set.add(d.subject); }); return [...set].sort((a,b) => a.localeCompare(b, 'zh')); }
+function getTypesForSubject(subject) { const types = subjectTypeConfig[subject]; if (types && types.length) return [...types]; return ['其他']; }
+function getAllTypes() { const set = new Set(); Object.values(subjectTypeConfig).forEach(types => types.forEach(t => set.add(t))); db.forEach(d => { if (d.type) set.add(d.type); }); return [...set].sort((a,b) => a.localeCompare(b, 'zh')); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function updateSubjectFilter() {
+  const sel = document.getElementById('filter-subject');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">全部科目</option>';
+  getAllSubjects().forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; if (s === cur) o.selected = true; sel.appendChild(o); });
+}
+function updateTypeFilter() {
+  const sel = document.getElementById('filter-type');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">全部题型</option>';
+  getAllTypes().forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; if (t === cur) o.selected = true; sel.appendChild(o); });
+}
+function updateFilters() { updateSubjectFilter(); updateTypeFilter(); }
+function populateSubjectSelect(selectedVal) {
+  const sel = document.getElementById('f-subject'); sel.innerHTML = '';
+  const subjects = getAllSubjects();
+  if (!subjects.length) { sel.innerHTML = '<option value="">-- 请先添加科目 --</option>'; document.getElementById('f-type').innerHTML = '<option value="">-- 请先选择科目 --</option>'; return; }
+  subjects.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; if (s === selectedVal) o.selected = true; sel.appendChild(o); });
+}
+function populateTypeSelect(selectedVal) {
+  const subject = document.getElementById('f-subject').value;
+  const typeSel = document.getElementById('f-type'); typeSel.innerHTML = '';
+  const types = getTypesForSubject(subject);
+  let found = false;
+  types.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; if (t === selectedVal) { o.selected = true; found = true; } typeSel.appendChild(o); });
+  if (selectedVal && !found && types.length > 0) typeSel.options[0].selected = true;
+}
+function onSubjectChange() { populateTypeSelect(null); }
+async function quickAddSubject() {
+  const name = await uiPrompt('请输入新科目名称：', { title: '添加科目', icon: 'ti-books' });
+  if (!name || !name.trim()) return;
+  const trimmed = name.trim();
+  if (subjectTypeConfig[trimmed]) { await uiAlert('该科目已存在', { title: '提示', iconClass: 'warn', icon: 'ti-alert-circle' }); return; }
+  subjectTypeConfig[trimmed] = [];
+  saveConfig(); populateSubjectSelect(trimmed); populateTypeSelect(null); updateFilters();
+}
+async function quickAddType() {
+  const subject = document.getElementById('f-subject').value;
+  if (!subject) { await uiAlert('请先选择科目', { title: '提示', iconClass: 'warn', icon: 'ti-alert-circle' }); return; }
+  const name = await uiPrompt('请为新题型命名（将添加到"' + subject + '"）：', { title: '添加题型', icon: 'ti-layout-list' });
+  if (!name || !name.trim()) return;
+  const trimmed = name.trim();
+  if (!subjectTypeConfig[subject]) subjectTypeConfig[subject] = [];
+  if (subjectTypeConfig[subject].includes(trimmed)) { await uiAlert('该题型已存在', { title: '提示', iconClass: 'warn', icon: 'ti-alert-circle' }); return; }
+  subjectTypeConfig[subject].push(trimmed);
+  saveConfig(); populateTypeSelect(trimmed); updateTypeFilter();
+}
+function openManageModal() { renderManage(); document.getElementById('manage-overlay').classList.add('open'); }
+function closeManageModal() { document.getElementById('manage-overlay').classList.remove('open'); }
+document.getElementById('manage-overlay').addEventListener('click', function(e) { if (e.target === this) closeManageModal(); });
+function renderManage() {
+  const container = document.getElementById('manage-content');
+  const subjects = Object.keys(subjectTypeConfig).sort((a,b) => a.localeCompare(b, 'zh'));
+  if (!subjects.length) { container.innerHTML = '<p style="font-size:13px;color:var(--text-secondary);text-align:center;padding:2rem 0;">暂无科目配置，请点击下方"添加科目"</p>'; return; }
+  container.innerHTML = subjects.map(subj => {
+    const types = subjectTypeConfig[subj] || [];
+    const typesHtml = types.length ? types.map(t => `<span class="manage-type-tag">${esc(t)}<button class="manage-type-del" data-action="del-type" data-subj="${esc(subj)}" data-type="${esc(t)}">&times;</button></span>`).join('') : '<span style="font-size:12px;color:var(--text-hint);">暂无题型</span>';
+    return `<div class="manage-subject-block"><div class="manage-subject-header"><span class="manage-subject-name"><i class="ti ti-books"></i> ${esc(subj)}</span><div class="manage-subject-actions"><button class="icon-btn" data-action="edit-subj" data-subj="${esc(subj)}" title="重命名"><i class="ti ti-edit"></i></button><button class="icon-btn" data-action="del-subj" data-subj="${esc(subj)}" title="删除科目"><i class="ti ti-trash"></i></button></div></div><div class="manage-types">${typesHtml}<span class="manage-add-type" data-action="add-type" data-subj="${esc(subj)}">+ 添加题型</span></div></div>`;
+  }).join('');
+}
+document.getElementById('manage-content').addEventListener('click', async function(e) {
+  const target = e.target.closest('[data-action]');
+  if (!target) return;
+  const {action, subj, type} = target.dataset;
+  if (action === 'add-type') promptAddType(subj);
+  else if (action === 'del-type') {
+    const ok = await uiConfirm('确认从"' + subj + '"中删除题型"' + type + '"？', { title: '删除题型', icon: 'ti-trash', iconClass: 'danger', confirmLabel: '确认删除' });
+    if (!ok) return;
+    if (subjectTypeConfig[subj]) subjectTypeConfig[subj] = subjectTypeConfig[subj].filter(t => t !== type);
+    saveConfig(); renderManage(); updateTypeFilter();
+  } else if (action === 'edit-subj') promptEditSubject(subj);
+  else if (action === 'del-subj') {
+    const ok = await uiConfirm('确认删除科目"' + subj + '"？删除后该科目下的题型配置将一并移除。', { title: '删除科目', icon: 'ti-trash', iconClass: 'danger', confirmLabel: '确认删除' });
+    if (!ok) return;
+    delete subjectTypeConfig[subj]; saveConfig(); renderManage(); updateFilters();
+  }
+});
+async function promptAddSubject() {
+  const name = await uiPrompt('请输入新科目名称：', { title: '添加科目', icon: 'ti-books' });
+  if (!name || !name.trim()) return;
+  const trimmed = name.trim();
+  if (subjectTypeConfig[trimmed]) { await uiAlert('该科目已存在', { title: '提示', iconClass: 'warn', icon: 'ti-alert-circle' }); return; }
+  subjectTypeConfig[trimmed] = []; saveConfig(); renderManage(); updateFilters();
+}
+async function promptAddType(subj) {
+  const name = await uiPrompt('为"' + subj + '"添加新题型：', { title: '添加题型', icon: 'ti-layout-list' });
+  if (!name || !name.trim()) return;
+  const trimmed = name.trim();
+  if (!subjectTypeConfig[subj]) subjectTypeConfig[subj] = [];
+  if (subjectTypeConfig[subj].includes(trimmed)) { await uiAlert('该题型已存在', { title: '提示', iconClass: 'warn', icon: 'ti-alert-circle' }); return; }
+  subjectTypeConfig[subj].push(trimmed); saveConfig(); renderManage(); updateTypeFilter();
+}
+async function promptEditSubject(oldName) {
+  const newName = await uiPrompt('请输入新的科目名称：', { title: '重命名科目', icon: 'ti-edit', defaultVal: oldName });
+  if (!newName || !newName.trim() || newName.trim() === oldName) return;
+  const trimmed = newName.trim();
+  if (subjectTypeConfig[trimmed]) { await uiAlert('该科目名称已存在', { title: '提示', iconClass: 'warn', icon: 'ti-alert-circle' }); return; }
+  subjectTypeConfig[trimmed] = subjectTypeConfig[oldName] || [];
+  delete subjectTypeConfig[oldName];
+  db.forEach(d => { if (d.subject === oldName) d.subject = trimmed; });
+  saveConfig(); renderManage(); renderAll();
+}
+
+function renderImageWithViewer(src, alt) {
+  if (!src) return '';
+  return `<div class="img-viewer-wrap"><img class="content-image viewer-img" src="${src}" alt="${alt}" draggable="false" onload="onImgLoad(this)" /><div class="img-viewer-toolbar"><button class="icon-btn" onclick="zoomInline(this, -0.2)" title="缩小"><i class="ti ti-zoom-out"></i></button><button class="icon-btn" onclick="zoomInline(this, 0.2)" title="放大"><i class="ti ti-zoom-in"></i></button><button class="icon-btn" onclick="openFullscreen(this)" title="全屏查看"><i class="ti ti-maximize"></i></button></div></div>`;
+}
+function cardHTML(d) {
+  const dateStr = new Date(d.date).toLocaleDateString('zh-CN');
+  return `<div class="card" id="c-${d.id}">
+    <div class="card-header">
+      <div style="flex:1">
+        <div class="card-meta">
+          <span class="badge badge-subject">${esc(d.subject)}</span>
+          <span class="badge badge-type">${esc(d.type)}</span>
+          <span class="badge badge-mastery-${d.mastery}">${MASTERY_LABEL[d.mastery]}</span>
+        </div>
+        ${d.source ? `<p class="source-text">来源：${esc(d.source)}</p>` : ''}
+      </div>
+      <div class="card-actions">
+        <button class="icon-btn" title="编辑" onclick="editItem('${d.id}')"><i class="ti ti-edit"></i></button>
+        <button class="icon-btn" title="删除" onclick="deleteItem('${d.id}')"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>
+    ${d.question ? `<p class="section-label">题目</p><div class="content-box">${d.question}</div>` : ''}
+    ${d.questionImg ? renderImageWithViewer(d.questionImg, '题目图片') : ''}
+    ${d.error ? `<hr class="divider"><p class="section-label">错因分析</p><div class="content-box error-box">${d.error}</div>` : ''}
+    <hr class="divider">
+    <p class="section-label">解题思路</p>
+    <div class="content-box">${d.solution}</div>
+    ${d.solutionImg ? renderImageWithViewer(d.solutionImg, '解析图片') : ''}
+    ${d.tags&&d.tags.length ? `<div class="tags">${d.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
+    <div class="review-row"><span class="review-info"><i class="ti ti-calendar" style="vertical-align:-2px"></i> ${dateStr}</span>
+      <div class="mastery-btns">
+        <button class="m-btn ${d.mastery===0?'active-0':''}" onclick="setMastery('${d.id}',0)">未掌握</button>
+        <button class="m-btn ${d.mastery===1?'active-1':''}" onclick="setMastery('${d.id}',1)">模糊</button>
+        <button class="m-btn ${d.mastery===2?'active-2':''}" onclick="setMastery('${d.id}',2)">已掌握</button>
+      </div>
+    </div>
+  </div>`;
+}
+function renderList() {
+  updateFilters();
+  const q = document.getElementById('search').value.toLowerCase();
+  const subj = document.getElementById('filter-subject').value;
+  const type = document.getElementById('filter-type').value;
+  const mastery = document.getElementById('filter-mastery').value;
+  let items = db.filter(d => {
+    if (subj && d.subject !== subj) return false;
+    if (type && d.type !== type) return false;
+    if (mastery !== '' && String(d.mastery) !== mastery) return false;
+    if (q) { const hay = (d.question+d.solution+(d.tags||[]).join()+d.subject+d.type).toLowerCase(); if (!hay.includes(q)) return false; }
+    return true;
+  }).sort((a,b) => b.date - a.date);
+  const el = document.getElementById('card-list');
+  if (!items.length) { el.innerHTML = `<div class="empty-state"><i class="ti ti-mood-smile"></i><p>${db.length?'没有符合条件的错题':'暂无错题，点击右上角"添加错题"开始记录吧！'}</p></div>`; return; }
+  el.innerHTML = items.map(cardHTML).join('');
+}
+function renderReview() {
+  let items = db.filter(d => d.mastery < 2).sort((a,b) => b.date - a.date);
+  const el = document.getElementById('review-list');
+  if (!items.length) { el.innerHTML = `<div class="empty-state"><i class="ti ti-confetti"></i><p>没有待复习的题目，全部掌握了！🎉</p></div>`; return; }
+  el.innerHTML = items.map(cardHTML).join('');
+}
+function barChart(container, data) {
+  if (!data.length) { container.innerHTML = '<p style="font-size:13px;color:var(--text-secondary)">暂无数据</p>'; return; }
+  const max = Math.max(...data.map(d=>d.count), 1);
+  container.innerHTML = data.map((d,i) => `<div class="chart-bar-row"><span class="chart-bar-label">${esc(d.label)}</span><div class="chart-bar-track"><div class="chart-bar-fill" style="width:${Math.round(d.count/max*100)}%;background:${COLORS[i%COLORS.length]}">${d.count}题</div></div></div>`).join('');
+}
+function renderStats() {
+  const total = db.length, m0 = db.filter(d=>d.mastery===0).length, m1 = db.filter(d=>d.mastery===1).length, m2 = db.filter(d=>d.mastery===2).length;
+  document.getElementById('stat-grid').innerHTML = `<div class="stat-card"><div class="stat-val">${total}</div><div class="stat-lbl">总错题数</div></div><div class="stat-card"><div class="stat-val" style="color:var(--danger-text)">${m0}</div><div class="stat-lbl">未掌握</div></div><div class="stat-card"><div class="stat-val" style="color:var(--warn-text)">${m1}</div><div class="stat-lbl">模糊</div></div><div class="stat-card"><div class="stat-val" style="color:var(--success-text)">${m2}</div><div class="stat-lbl">已掌握</div></div>`;
+  const bySubject = [...new Set(db.map(d=>d.subject).filter(Boolean))].map(s=>({label:s, count:db.filter(d=>d.subject===s).length})).sort((a,b)=>b.count-a.count);
+  barChart(document.getElementById('chart-subject'), bySubject);
+  barChart(document.getElementById('chart-mastery'), [{label:'未掌握',count:m0},{label:'模糊',count:m1},{label:'已掌握',count:m2}]);
+  document.getElementById('chart-mastery').querySelectorAll('.chart-bar-fill').forEach((el,i)=>{ el.style.background = ['#E24B4A','#EF9F27','#639922'][i]; });
+  const byType = [...new Set(db.map(d=>d.type).filter(Boolean))].map(t=>({label:t, count:db.filter(d=>d.type===t).length})).sort((a,b)=>b.count-a.count);
+  barChart(document.getElementById('chart-type'), byType);
+}
+async function setMastery(id, val) {
+  const item = db.find(d=>d.id===id);
+  if (item) { item.mastery = val; await saveToIDB(item); renderAll(); afterDataChange(); }
+}
+async function deleteItem(id) {
+  const ok = await uiConfirm('确认删除这道错题？此操作不可撤销。', { title: '删除错题', icon: 'ti-trash', iconClass: 'danger', confirmLabel: '确认删除' });
+  if (!ok) return;
+  db = db.filter(d=>d.id!==id); await deleteFromIDB(id); renderAll(); afterDataChange();
+}
+function openModal() {
+  editId = null;
+  document.getElementById('modal-title').textContent = '添加错题';
+  document.getElementById('f-question').innerHTML = '';
+  document.getElementById('f-error').innerHTML = '';
+  document.getElementById('f-solution').innerHTML = '';
+  document.getElementById('f-tags').value = '';
+  document.getElementById('f-source').value = '';
+  populateSubjectSelect(null);
+  populateTypeSelect(null);
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+document.getElementById('modal-overlay').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+function editItem(id) {
+  const item = db.find(d=>d.id===id);
+  if (!item) return;
+  editId = id;
+  document.getElementById('modal-title').textContent = '编辑错题';
+  let qHtml = item.question || '';
+  if (item.questionImg) qHtml += `<br><img src="${item.questionImg}">`;
+  document.getElementById('f-question').innerHTML = qHtml;
+  document.getElementById('f-error').innerHTML = item.error || '';
+  let sHtml = item.solution || '';
+  if (item.solutionImg) sHtml += `<br><img src="${item.solutionImg}">`;
+  document.getElementById('f-solution').innerHTML = sHtml;
+  document.getElementById('f-tags').value = (item.tags||[]).join(', ');
+  document.getElementById('f-source').value = item.source||'';
+  populateSubjectSelect(item.subject);
+  populateTypeSelect(item.type);
+  document.getElementById('modal-overlay').classList.add('open');
+}
+async function saveItem() {
+  const subject = document.getElementById('f-subject').value;
+  const type = document.getElementById('f-type').value;
+  const solutionHtml = document.getElementById('f-solution').innerHTML.trim();
+  if (!subject) { await uiAlert('请选择科目', { title: '请补充信息', iconClass: 'warn', icon: 'ti-alert-circle' }); return; }
+  if (!type) { await uiAlert('请选择题型', { title: '请补充信息', iconClass: 'warn', icon: 'ti-alert-circle' }); return; }
+  if (!solutionHtml) { await uiAlert('请填写解题思路', { title: '请补充信息', iconClass: 'warn', icon: 'ti-alert-circle' }); return; }
+  const itemData = {
+    subject, type,
+    question: document.getElementById('f-question').innerHTML.trim(),
+    error: document.getElementById('f-error').innerHTML.trim(),
+    solution: solutionHtml,
+    tags: document.getElementById('f-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
+    source: document.getElementById('f-source').value.trim(),
+  };
+  if (editId) {
+    const idx = db.findIndex(d=>d.id===editId);
+    if (idx>=0) { db[idx] = {...db[idx], ...itemData, questionImg: null, solutionImg: null}; await saveToIDB(db[idx]); }
+  } else {
+    const newItem = {...itemData, id: Date.now().toString(36)+Math.random().toString(36).slice(2,6), date: Date.now(), mastery: 0};
+    db.push(newItem); await saveToIDB(newItem);
+  }
+  closeModal(); renderAll(); afterDataChange();
+}
+document.querySelectorAll('.rich-editor').forEach(editor => {
+  editor.addEventListener('paste', function(e) {
+    e.preventDefault();
+    const clipboardData = e.clipboardData || window.clipboardData;
+    if (!clipboardData) return;
+    let hasImage = false;
+    for (let i = 0; i < clipboardData.items.length; i++) {
+      const item = clipboardData.items[i];
+      if (item.type.indexOf('image') !== -1) {
+        hasImage = true;
+        const blob = item.getAsFile();
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const base64 = event.target.result;
+          document.execCommand('insertHTML', false, `<img src="${base64}" />`);
+        };
+        reader.readAsDataURL(blob);
+      }
+    }
+    if (!hasImage) {
+      const text = clipboardData.getData('text/plain');
+      document.execCommand('insertText', false, text);
+    }
+  });
+});
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active'); document.getElementById('page-'+name).classList.add('active');
+}
+function renderAll() { renderList(); renderReview(); renderStats(); }
+
+// ========================= 图片漫游（复用原逻辑） =========================
+const inlineImgStates = new WeakMap();
+function getImgState(img) { if (!inlineImgStates.has(img)) inlineImgStates.set(img, { scale: 1, x: 0, y: 0 }); return inlineImgStates.get(img); }
+function updateInlineTransform(img) {
+  const state = getImgState(img);
+  img.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.scale})`;
+  const wrap = img.closest('.img-viewer-wrap');
+  if (state.scale > 1) wrap.classList.add('zoomed'); else { wrap.classList.remove('zoomed'); state.x = 0; state.y = 0; img.style.transform = `translate(0,0) scale(1)`; }
+}
+function zoomInline(btn, delta) {
+  const wrap = btn.closest('.img-viewer-wrap');
+  const img = wrap.querySelector('.viewer-img');
+  const state = getImgState(img);
+  state.scale = Math.max(0.5, Math.min(state.scale + delta, 1.8));
+  updateInlineTransform(img);
+}
+let isDraggingInline = false, currentInlineImg = null, startXInline, startYInline;
+document.addEventListener('mousedown', (e) => {
+  const img = e.target.closest('.viewer-img');
+  if (!img) return;
+  const state = getImgState(img);
+  if (state.scale <= 1) return;
+  isDraggingInline = true; currentInlineImg = img;
+  startXInline = e.clientX - state.x; startYInline = e.clientY - state.y;
+  e.preventDefault();
+});
+window.addEventListener('mousemove', (e) => {
+  if (!isDraggingInline || !currentInlineImg) return;
+  const state = getImgState(currentInlineImg);
+  state.x = e.clientX - startXInline; state.y = e.clientY - startYInline;
+  updateInlineTransform(currentInlineImg);
+});
+window.addEventListener('mouseup', () => { isDraggingInline = false; currentInlineImg = null; });
+function onImgLoad(img) { getImgState(img); }
+let fsScale = 1, fsTransX = 0, fsTransY = 0, isDraggingFs = false, startX, startY;
+function openFullscreen(btn) {
+  const wrap = btn.closest('.img-viewer-wrap');
+  const imgSrc = wrap.querySelector('.viewer-img').src;
+  const overlay = document.getElementById('fs-overlay');
+  const fsImg = document.getElementById('fs-img');
+  fsImg.src = imgSrc; fsScale = 1; fsTransX = 0; fsTransY = 0; updateFsTransform(); overlay.classList.add('open');
+}
+function closeFullscreen() { document.getElementById('fs-overlay').classList.remove('open'); }
+function updateFsTransform() { document.getElementById('fs-img').style.transform = `translate(${fsTransX}px, ${fsTransY}px) scale(${fsScale})`; }
+document.getElementById('fs-overlay').addEventListener('wheel', (e) => { e.preventDefault(); if (e.deltaY < 0) fsScale = Math.min(fsScale + 0.15, 10); else fsScale = Math.max(fsScale - 0.15, 0.2); updateFsTransform(); }, { passive: false });
+const fsImgEle = document.getElementById('fs-img');
+fsImgEle.addEventListener('mousedown', (e) => { isDraggingFs = true; startX = e.clientX - fsTransX; startY = e.clientY - fsTransY; e.preventDefault(); });
+window.addEventListener('mousemove', (e) => { if (!isDraggingFs) return; fsTransX = e.clientX - startX; fsTransY = e.clientY - startY; updateFsTransform(); });
+window.addEventListener('mouseup', () => { isDraggingFs = false; });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeFullscreen(); });
+document.addEventListener('click', function(e) {
+  if (e.target.tagName === 'IMG' && (e.target.closest('.content-box') || e.target.closest('.rich-editor'))) {
+    if(e.target.classList.contains('viewer-img')) return;
+    const overlay = document.getElementById('fs-overlay');
+    const fsImg = document.getElementById('fs-img');
+    fsImg.src = e.target.src; fsScale = 1; fsTransX = 0; fsTransY = 0; updateFsTransform(); overlay.classList.add('open');
+  }
+});
+
+// ========================= 导出 / 导入（保留原功能） =========================
+async function exportBackup() {
+  const data = { config: subjectTypeConfig, mistakes: db };
+  const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = `公考错题本_${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(url);
+}
+async function importBackup(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const imported = JSON.parse(e.target.result);
+    const ok = await uiConfirm('确定要导入 ' + imported.mistakes.length + ' 条数据吗？这会合并当前数据。', { title: '导入确认', icon: 'ti-upload', iconClass: 'warn', confirmLabel: '确定导入', confirmClass: 'btn-primary' });
+    if (ok) {
+      subjectTypeConfig = imported.config; await saveConfig();
+      for (const item of imported.mistakes) { await saveToIDB(item); }
+      db = await getAllFromIDB(); renderAll(); afterDataChange();
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ========================= WebDAV 自动同步 =========================
+let webdavConfig = null;
+function loadWebDAVConfig() {
+  const cfg = localStorage.getItem('webdav_config');
+  if (cfg) webdavConfig = JSON.parse(cfg);
+}
+function saveWebDAVConfigToLocal(url, username, password) {
+  webdavConfig = { url, username, password };
+  localStorage.setItem('webdav_config', JSON.stringify(webdavConfig));
+}
+function getWebDAVHeaders() {
+  if (!webdavConfig || !webdavConfig.url || !webdavConfig.username || !webdavConfig.password) return null;
+  const auth = btoa(`${webdavConfig.username}:${webdavConfig.password}`);
+  return { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/json' };
+}
+async function syncToWebDAV() {
+  if (!webdavConfig) return;
+  const headers = getWebDAVHeaders();
+  if (!headers) return;
+  const dataToUpload = { version: 1, timestamp: Date.now(), mistakes: db.map(({questionImg, solutionImg, ...rest}) => rest) }; // 去掉冗余的旧图片字段
+  try {
+    const response = await fetch(webdavConfig.url, { method: 'PUT', headers, body: JSON.stringify(dataToUpload) });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    console.log('WebDAV 同步成功');
+  } catch (err) { console.error('WebDAV 上传失败', err); }
+}
+async function syncFromWebDAV() {
+  if (!webdavConfig) return;
+  const headers = getWebDAVHeaders();
+  if (!headers) return;
+  try {
+    const response = await fetch(webdavConfig.url, { method: 'GET', headers });
+    if (response.status === 404) return;
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const remote = await response.json();
+    if (remote.mistakes && remote.version === 1) {
+      const localMap = new Map(db.map(d => [d.id, d]));
+      let changed = false;
+      for (const rItem of remote.mistakes) {
+        const local = localMap.get(rItem.id);
+        if (!local || (rItem.date && rItem.date > local.date)) {
+          localMap.set(rItem.id, rItem);
+          changed = true;
+        }
+      }
+      if (changed) {
+        db = Array.from(localMap.values());
+        for (const item of db) await saveToIDB(item);
+        renderAll();
+        console.log('从 WebDAV 合并了远程数据');
+      }
+    }
+  } catch (err) { console.error('WebDAV 下载失败', err); }
+}
+function afterDataChange() { syncToWebDAV(); } // 每次数据变动后自动上传
+function openWebDAVSetup() {
+  if (webdavConfig) {
+    document.getElementById('webdav-url').value = webdavConfig.url || '';
+    document.getElementById('webdav-username').value = webdavConfig.username || '';
+    document.getElementById('webdav-password').value = webdavConfig.password || '';
+  } else {
+    document.getElementById('webdav-url').value = '';
+    document.getElementById('webdav-username').value = '';
+    document.getElementById('webdav-password').value = '';
+  }
+  document.getElementById('webdav-modal').classList.add('open');
+}
+function closeWebDAVSetup() { document.getElementById('webdav-modal').classList.remove('open'); }
+document.getElementById('webdav-modal').addEventListener('click', function(e) { if (e.target === this) closeWebDAVSetup(); });
+async function saveWebDAVConfigAndSync() {
+  const url = document.getElementById('webdav-url').value.trim();
+  const username = document.getElementById('webdav-username').value.trim();
+  const password = document.getElementById('webdav-password').value;
+  if (!url || !username || !password) { await uiAlert('请完整填写 WebDAV 地址、用户名和密码', { title: '信息不完整', iconClass: 'warn' }); return; }
+  saveWebDAVConfigToLocal(url, username, password);
+  closeWebDAVSetup();
+  await uiAlert('配置已保存，正在从网盘同步...', { title: '提示', iconClass: 'info', confirmLabel: '好的' });
+  await syncFromWebDAV();
+  await syncToWebDAV();
+}
+
+// ========================= 初始化 =========================
+(async function init() {
+  await initDB();
+  const savedConfig = await loadConfigFromIDB();
+  if (savedConfig) subjectTypeConfig = savedConfig;
+  else {
+    const lsConfig = localStorage.getItem('qb_config_v2');
+    if (lsConfig) { subjectTypeConfig = JSON.parse(lsConfig); await saveConfigToIDB(subjectTypeConfig); }
+  }
+  db = await getAllFromIDB();
+  if (db.length === 0) {
+    const oldData = JSON.parse(localStorage.getItem('qb_v2') || '[]');
+    if (oldData.length > 0) { for (const item of oldData) await saveToIDB(item); db = await getAllFromIDB(); }
+  }
+  loadWebDAVConfig();
+  renderAll();
+  if (webdavConfig) await syncFromWebDAV(); // 启动时自动从网盘拉取
+})();
+</script>
+</body>
+</html>
