@@ -330,6 +330,75 @@
   .sync-status { font-size: 12px; color: var(--text-hint); display: flex; align-items: center; gap: 5px; }
   .sync-status i { font-size: 14px; }
 
+  /* Sync button states */
+  .sync-btn { position: relative; transition: color 0.25s, background 0.25s; }
+  .sync-btn.sync-idle { color: var(--text-secondary); }
+  .sync-btn.sync-syncing { color: #378ADD; animation: spin 1s linear infinite; }
+  .sync-btn.sync-success { color: #3B6D11; }
+  .sync-btn.sync-fail { color: #A32D2D; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Toast notifications */
+  #toast-container {
+    position: fixed; bottom: 24px; right: 24px; z-index: 99999;
+    display: flex; flex-direction: column-reverse; gap: 10px;
+    pointer-events: none;
+    max-width: 380px;
+  }
+  .toast {
+    pointer-events: all;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    padding: 12px 14px;
+    display: flex; align-items: flex-start; gap: 10px;
+    animation: toast-in 0.22s cubic-bezier(0.34,1.56,0.64,1) both;
+    min-width: 280px;
+  }
+  .toast.toast-out { animation: toast-out 0.22s ease forwards; }
+  @keyframes toast-in { from { opacity:0; transform: translateY(16px) scale(0.95); } to { opacity:1; transform: translateY(0) scale(1); } }
+  @keyframes toast-out { from { opacity:1; transform: translateY(0) scale(1); } to { opacity:0; transform: translateY(8px) scale(0.95); } }
+  .toast-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .toast-icon.err { color: var(--danger-text); }
+  .toast-body { flex: 1; }
+  .toast-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 3px; }
+  .toast-msg { font-size: 12px; color: var(--text-secondary); line-height: 1.5; word-break: break-all; }
+  .toast-progress {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+    background: var(--danger-text); border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    transform-origin: left; animation: toast-progress 30s linear forwards;
+    opacity: 0.5;
+  }
+  @keyframes toast-progress { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+  .toast { position: relative; overflow: hidden; }
+  .toast-close {
+    flex-shrink: 0; background: none; border: none; cursor: pointer;
+    color: var(--text-hint); font-size: 16px; padding: 2px; line-height: 1;
+    display: flex; align-items: center; border-radius: 4px;
+    transition: color 0.12s, background 0.12s;
+  }
+  .toast-close:hover { color: var(--text-primary); background: var(--bg-secondary); }
+
+  /* Pie chart styles */
+  .pie-section { margin-top: 12px; }
+  .pie-subject-selector { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+  .pie-subject-btn {
+    font-size: 12px; padding: 5px 13px; border-radius: 14px;
+    border: 1px solid var(--border-mid); background: none;
+    color: var(--text-secondary); cursor: pointer; font-family: inherit;
+    transition: all 0.15s;
+  }
+  .pie-subject-btn:hover { background: var(--bg-secondary); color: var(--text-primary); }
+  .pie-subject-btn.active { background: var(--text-primary); color: var(--bg-primary); border-color: var(--text-primary); }
+  .pie-chart-wrap { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  .pie-svg-wrap { flex-shrink: 0; }
+  .pie-legend { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 120px; }
+  .pie-legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .pie-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .pie-legend-label { color: var(--text-primary); flex: 1; }
+  .pie-legend-val { color: var(--text-secondary); font-size: 12px; }
+
   /* ---- Rich text toolbar ---- */
   .editor-wrap { position: relative; }
   .rte-toolbar {
@@ -489,6 +558,7 @@
     <h1><i class="ti ti-notebook"></i> 公考错题本</h1>
     <div class="top-bar-actions">
       <button class="btn" onclick="openWebDAVSetup()"><i class="ti ti-cloud-upload"></i> 网盘同步</button>
+      <button class="btn sync-btn sync-idle" id="sync-btn" onclick="manualSync()" title="手动同步到云端"><i class="ti ti-refresh" id="sync-icon"></i></button>
       <button class="btn" onclick="openManageModal()"><i class="ti ti-settings"></i> 管理科目</button>
       <button class="btn" onclick="exportBackup()"><i class="ti ti-download"></i> 导出备份</button>
       <button class="btn" onclick="document.getElementById('import-input').click()"><i class="ti ti-upload"></i> 导入</button>
@@ -574,6 +644,13 @@
     <div class="chart-wrap">
       <p class="section-title">题型分布</p>
       <div id="chart-type"></div>
+    </div>
+    <div class="chart-wrap pie-section">
+      <p class="section-title">科目题型分布（饼图）</p>
+      <div class="pie-subject-selector" id="pie-subject-selector"></div>
+      <div class="pie-chart-wrap" id="pie-chart-wrap">
+        <p style="font-size:13px;color:var(--text-secondary)">暂无数据</p>
+      </div>
     </div>
   </div>
 </div>
@@ -697,6 +774,8 @@
   <button class="fs-close-btn" onclick="closeFullscreen()" title="关闭 (Esc)">✕</button>
   <img id="fs-img" class="fs-img" src="" alt="全屏图片" draggable="false" />
 </div>
+
+<div id="toast-container"></div>
 
 <script>
 // ========================= 自定义对话框 =========================
@@ -974,6 +1053,7 @@ function renderStats() {
   document.getElementById('chart-mastery').querySelectorAll('.chart-bar-fill').forEach((el,i)=>{ el.style.background = ['#E24B4A','#EF9F27','#639922'][i]; });
   const byType = [...new Set(db.map(d=>d.type).filter(Boolean))].map(t=>({label:t, count:db.filter(d=>d.type===t).length})).sort((a,b)=>b.count-a.count);
   barChart(document.getElementById('chart-type'), byType);
+  renderPieChart();
 }
 async function setMastery(id, val) {
   const item = db.find(d=>d.id===id);
@@ -1706,11 +1786,73 @@ function getR2Headers() {
   return { 'Content-Type': 'application/json', 'X-Auth-Token': webdavConfig.password };
 }
 
-// 节流：避免频繁上传（500ms 内多次变更只触发一次）
-let _syncTimer = null;
-function afterDataChange() {
-  clearTimeout(_syncTimer);
-  _syncTimer = setTimeout(() => syncToR2(), 500);
+// afterDataChange 不再触发自动同步，仅作占位保留，方便以后扩展
+function afterDataChange() { /* 已改为手动同步，无需自动触发 */ }
+
+// ========================= Toast 通知系统 =========================
+function showErrorToast(title, msg) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.innerHTML = `
+    <i class="ti ti-alert-circle toast-icon err"></i>
+    <div class="toast-body">
+      <div class="toast-title">${esc(title)}</div>
+      <div class="toast-msg">${esc(msg)}</div>
+    </div>
+    <button class="toast-close" onclick="dismissToast(this.closest('.toast'))"><i class="ti ti-x"></i></button>
+    <div class="toast-progress"></div>
+  `;
+  container.appendChild(toast);
+  // Auto-dismiss after 30s
+  const timer = setTimeout(() => dismissToast(toast), 30000);
+  toast._autoTimer = timer;
+}
+
+function dismissToast(toast) {
+  if (!toast || !toast.parentNode) return;
+  clearTimeout(toast._autoTimer);
+  toast.classList.add('toast-out');
+  setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 240);
+}
+
+// ========================= 同步按钮状态管理 =========================
+let _syncState = 'idle'; // 'idle' | 'syncing' | 'success' | 'fail'
+let _syncResetTimer = null;
+
+function setSyncState(state) {
+  _syncState = state;
+  const btn = document.getElementById('sync-btn');
+  const icon = document.getElementById('sync-icon');
+  if (!btn || !icon) return;
+  btn.className = 'btn sync-btn sync-' + state;
+  // Update icon
+  const iconMap = { idle: 'ti-refresh', syncing: 'ti-refresh', success: 'ti-circle-check', fail: 'ti-alert-circle' };
+  icon.className = 'ti ' + (iconMap[state] || 'ti-refresh');
+  // Auto-reset from success/fail back to idle after 4s
+  clearTimeout(_syncResetTimer);
+  if (state === 'success' || state === 'fail') {
+    _syncResetTimer = setTimeout(() => setSyncState('idle'), 4000);
+  }
+}
+
+// ========================= 手动同步入口 =========================
+async function manualSync() {
+  if (_syncState === 'syncing') return;
+  const headers = getR2Headers();
+  if (!headers) {
+    await uiAlert('请先配置 Worker 地址和 Token（点击"网盘同步"按钮）', { title: '未配置云端同步', iconClass: 'warn', icon: 'ti-alert-circle' });
+    return;
+  }
+  setSyncState('syncing');
+  try {
+    await syncFromR2();
+    await syncToR2();
+    setSyncState('success');
+  } catch (err) {
+    setSyncState('fail');
+    showErrorToast('同步失败', err.message || '未知错误，请检查 Worker 地址和 Token 是否正确。');
+  }
 }
 
 async function syncToR2() {
@@ -1724,72 +1866,152 @@ async function syncToR2() {
     notes: notesDb,
     standaloneTags
   });
-  try {
-    const res = await fetch(webdavConfig.url, { method: 'PUT', headers, body: payload });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    console.log('[R2] 上传成功');
-  } catch (err) {
-    console.error('[R2] 上传失败', err);
-  }
+  const res = await fetch(webdavConfig.url, { method: 'PUT', headers, body: payload });
+  if (!res.ok) throw new Error(`上传失败：HTTP ${res.status}`);
+  console.log('[R2] 上传成功');
 }
 
 async function syncFromR2() {
   const headers = getR2Headers();
   if (!headers) return;
-  try {
-    const res = await fetch(webdavConfig.url, { method: 'GET', headers });
-    if (!res.ok) { if (res.status !== 404) throw new Error(`HTTP ${res.status}`); return; }
-    const remote = await res.json();
-    if (!remote.mistakes || (remote.version !== 2 && remote.version !== 3)) return;
-
-    // 合并配置
-    if (remote.config) {
-      subjectTypeConfig = { ...remote.config, ...subjectTypeConfig };
-      for (const [subj, types] of Object.entries(remote.config)) {
-        if (!subjectTypeConfig[subj]) subjectTypeConfig[subj] = types;
-      }
-      await saveConfig();
-    }
-
-    // 合并错题
-    const localMap = new Map(db.map(d => [d.id, d]));
-    let changed = false;
-    for (const rItem of remote.mistakes) {
-      const local = localMap.get(rItem.id);
-      if (rItem._deleted) {
-        if (localMap.has(rItem.id)) { localMap.delete(rItem.id); await deleteFromIDB(rItem.id); changed = true; }
-        continue;
-      }
-      if (!local || rItem.date > local.date) {
-        localMap.set(rItem.id, rItem);
-        await saveToIDB(rItem);
-        changed = true;
-      }
-    }
-    if (changed) { db = Array.from(localMap.values()); }
-
-    // 合并知识点笔记（以 updatedAt 最新为准）
-    if (remote.notes) {
-      for (const [tag, rNote] of Object.entries(remote.notes)) {
-        const local = notesDb[tag];
-        if (!local || rNote.updatedAt > local.updatedAt) {
-          notesDb[tag] = rNote;
-          await saveNoteToIDB(tag, { ...rNote, id: tag });
-        }
-      }
-    }
-
-    // 合并独立标签
-    if (remote.standaloneTags) {
-      standaloneTags = [...new Set([...standaloneTags, ...remote.standaloneTags])];
-      saveStandaloneTags();
-    }
-
-    renderAll();
-    console.log('[R2] 同步完成');
-  } catch (err) {
-    console.error('[R2] 下载失败', err);
+  const res = await fetch(webdavConfig.url, { method: 'GET', headers });
+  if (!res.ok) {
+    if (res.status === 404) return; // 云端还没有数据，正常
+    throw new Error(`下载失败：HTTP ${res.status}`);
   }
+  const remote = await res.json();
+  if (!remote.mistakes || (remote.version !== 2 && remote.version !== 3)) return;
+
+  // 合并配置
+  if (remote.config) {
+    subjectTypeConfig = { ...remote.config, ...subjectTypeConfig };
+    for (const [subj, types] of Object.entries(remote.config)) {
+      if (!subjectTypeConfig[subj]) subjectTypeConfig[subj] = types;
+    }
+    await saveConfig();
+  }
+
+  // 合并错题
+  const localMap = new Map(db.map(d => [d.id, d]));
+  let changed = false;
+  for (const rItem of remote.mistakes) {
+    const local = localMap.get(rItem.id);
+    if (rItem._deleted) {
+      if (localMap.has(rItem.id)) { localMap.delete(rItem.id); await deleteFromIDB(rItem.id); changed = true; }
+      continue;
+    }
+    if (!local || rItem.date > local.date) {
+      localMap.set(rItem.id, rItem);
+      await saveToIDB(rItem);
+      changed = true;
+    }
+  }
+  if (changed) { db = Array.from(localMap.values()); }
+
+  // 合并知识点笔记（以 updatedAt 最新为准）
+  if (remote.notes) {
+    for (const [tag, rNote] of Object.entries(remote.notes)) {
+      const local = notesDb[tag];
+      if (!local || rNote.updatedAt > local.updatedAt) {
+        notesDb[tag] = rNote;
+        await saveNoteToIDB(tag, { ...rNote, id: tag });
+      }
+    }
+  }
+
+  // 合并独立标签
+  if (remote.standaloneTags) {
+    standaloneTags = [...new Set([...standaloneTags, ...remote.standaloneTags])];
+    saveStandaloneTags();
+  }
+
+  renderAll();
+  console.log('[R2] 同步完成');
+}
+
+// ========================= 饼图（科目题型分布） =========================
+let _pieSelectedSubject = null;
+
+function renderPieChart() {
+  const subjects = [...new Set(db.map(d => d.subject).filter(Boolean))].sort((a,b) => a.localeCompare(b, 'zh'));
+  const selector = document.getElementById('pie-subject-selector');
+  const chartWrap = document.getElementById('pie-chart-wrap');
+
+  if (!subjects.length) {
+    selector.innerHTML = '';
+    chartWrap.innerHTML = '<p style="font-size:13px;color:var(--text-secondary)">暂无数据</p>';
+    return;
+  }
+
+  // Auto-select first subject if none selected or selection no longer valid
+  if (!_pieSelectedSubject || !subjects.includes(_pieSelectedSubject)) {
+    _pieSelectedSubject = subjects[0];
+  }
+
+  // Render subject selector buttons
+  selector.innerHTML = subjects.map(s =>
+    `<button class="pie-subject-btn${_pieSelectedSubject === s ? ' active' : ''}" onclick="selectPieSubject('${esc(s).replace(/'/g,"\\'")}')">
+      ${esc(s)}
+    </button>`
+  ).join('');
+
+  // Get data for selected subject
+  const subjectItems = db.filter(d => d.subject === _pieSelectedSubject);
+  if (!subjectItems.length) {
+    chartWrap.innerHTML = '<p style="font-size:13px;color:var(--text-secondary)">该科目暂无错题</p>';
+    return;
+  }
+
+  // Aggregate by type
+  const typeMap = {};
+  subjectItems.forEach(d => { if (d.type) typeMap[d.type] = (typeMap[d.type] || 0) + 1; });
+  const entries = Object.entries(typeMap).sort((a,b) => b[1]-a[1]);
+  const total = subjectItems.length;
+
+  // Draw SVG pie
+  const size = 160;
+  const cx = size / 2, cy = size / 2, r = size / 2 - 10;
+  let startAngle = -Math.PI / 2;
+  const paths = entries.map(([label, count], i) => {
+    const angle = (count / total) * 2 * Math.PI;
+    const endAngle = startAngle + angle;
+    const x1 = cx + r * Math.cos(startAngle), y1 = cy + r * Math.sin(startAngle);
+    const x2 = cx + r * Math.cos(endAngle), y2 = cy + r * Math.sin(endAngle);
+    const largeArc = angle > Math.PI ? 1 : 0;
+    const d = entries.length === 1
+      ? `M ${cx} ${cy} m ${-r} 0 a ${r} ${r} 0 1 1 ${2*r} 0 a ${r} ${r} 0 1 1 ${-2*r} 0`
+      : `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+    const color = COLORS[i % COLORS.length];
+    startAngle = endAngle;
+    return { path: d, color, label, count };
+  });
+
+  const svgPaths = paths.map(p => `<path d="${p.path}" fill="${p.color}" stroke="var(--bg-primary)" stroke-width="2" />`).join('');
+  const pct = (c) => total > 0 ? Math.round(c / total * 100) : 0;
+
+  const legendHtml = paths.map(p =>
+    `<div class="pie-legend-item">
+      <div class="pie-legend-dot" style="background:${p.color}"></div>
+      <span class="pie-legend-label">${esc(p.label)}</span>
+      <span class="pie-legend-val">${p.count}题 · ${pct(p.count)}%</span>
+    </div>`
+  ).join('');
+
+  chartWrap.innerHTML = `
+    <div class="pie-svg-wrap">
+      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+        ${svgPaths}
+        <circle cx="${cx}" cy="${cy}" r="${r*0.42}" fill="var(--bg-primary)" />
+        <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="central" style="font-size:11px;fill:var(--text-secondary);font-family:inherit;">${total}题</text>
+      </svg>
+    </div>
+    <div class="pie-legend">${legendHtml}</div>
+  `;
+}
+
+function selectPieSubject(subj) {
+  _pieSelectedSubject = subj;
+  renderPieChart();
 }
 
 async function clearRemoteData() {
@@ -1820,9 +2042,7 @@ async function saveWebDAVConfigAndSync() {
   if (!url || !password) { await uiAlert('请填写 Worker 地址和 Token', { title: '信息不完整', iconClass: 'warn', icon: 'ti-alert-circle' }); return; }
   saveWebDAVConfigToLocal(url, password);
   closeWebDAVSetup();
-  await uiAlert('配置已保存，正在从云端同步…', { title: '提示', iconClass: 'info', confirmLabel: '好的' });
-  await syncFromR2();
-  await syncToR2();
+  await manualSync();
 }
 
 // ========================= 初始化 =========================
@@ -1846,7 +2066,7 @@ async function saveWebDAVConfigAndSync() {
   loadWebDAVConfig();
   loadStandaloneTags();
   renderAll();
-  if (webdavConfig) await syncFromR2();
+  // 同步已改为手动触发，启动时不自动同步
 })();
 </script>
 </body>
