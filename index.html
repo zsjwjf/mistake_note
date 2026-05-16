@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>公考错题本 · 自动同步版</title>
+<title>公考错题本</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" />
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -450,28 +450,25 @@
   </div>
 </div>
 
-<!-- WebDAV 设置模态框 -->
+<!-- R2 同步设置模态框 -->
 <div class="modal-overlay" id="webdav-modal">
   <div class="modal">
-    <h2><i class="ti ti-cloud"></i> 网盘同步设置 (WebDAV)</h2>
+    <h2><i class="ti ti-cloud"></i> 云端同步设置 (Cloudflare R2)</h2>
     <div class="manage-hint">
-      支持任何 WebDAV 协议网盘（推荐坚果云）。<br>
-      <strong>服务器地址示例</strong>：<code>https://dav.jianguoyun.com/dav/错题本/sync.json</code><br>
-      建议在网盘内先创建好文件夹，再填写完整路径（包含文件名）。
+      通过你自己部署的 Cloudflare Worker 与 R2 存储桶同步数据。<br>
+      <strong>Worker 地址示例</strong>：<code>https://your-worker.your-subdomain.workers.dev</code><br>
+      Token 为你在 Worker 中设置的 <code>AUTH_TOKEN</code> 值，不会发送给任何第三方。
     </div>
     <div class="form-row">
-      <label class="form-label">WebDAV 地址（完整文件URL）</label>
-      <input class="form-input" id="webdav-url" placeholder="https://dav.jianguoyun.com/dav/.../sync.json" />
+      <label class="form-label">Worker 地址</label>
+      <input class="form-input" id="webdav-url" placeholder="https://your-worker.xxx.workers.dev" />
     </div>
     <div class="form-row">
-      <label class="form-label">用户名（一般为账号/邮箱）</label>
-      <input class="form-input" id="webdav-username" placeholder="your@email.com" />
-    </div>
-    <div class="form-row">
-      <label class="form-label">密码 / 应用密码</label>
-      <input class="form-input" type="password" id="webdav-password" placeholder="应用密码（建议使用专用密码）" />
+      <label class="form-label">Auth Token（认证密钥）</label>
+      <input class="form-input" type="password" id="webdav-password" placeholder="在 Worker 代码中设置的密钥" />
     </div>
     <div class="modal-footer">
+      <button class="btn btn-danger" onclick="clearRemoteData()" style="margin-right:auto"><i class="ti ti-trash"></i> 清空云端数据</button>
       <button class="btn" onclick="closeWebDAVSetup()">取消</button>
       <button class="btn btn-primary" onclick="saveWebDAVConfigAndSync()"><i class="ti ti-cloud-upload"></i> 保存并立即同步</button>
     </div>
@@ -951,85 +948,122 @@ async function importBackup(input) {
   reader.readAsText(file);
 }
 
-// ========================= WebDAV 自动同步 =========================
-let webdavConfig = null;
+// ========================= R2 云端同步 =========================
+let webdavConfig = null; // 字段复用，实际存 { url, password }
+
 function loadWebDAVConfig() {
-  const cfg = localStorage.getItem('webdav_config');
+  const cfg = localStorage.getItem('r2_config');
   if (cfg) webdavConfig = JSON.parse(cfg);
 }
-function saveWebDAVConfigToLocal(url, username, password) {
-  webdavConfig = { url, username, password };
-  localStorage.setItem('webdav_config', JSON.stringify(webdavConfig));
+
+function saveWebDAVConfigToLocal(url, password) {
+  webdavConfig = { url, password };
+  localStorage.setItem('r2_config', JSON.stringify(webdavConfig));
 }
-function getWebDAVHeaders() {
-  if (!webdavConfig || !webdavConfig.url || !webdavConfig.username || !webdavConfig.password) return null;
-  const auth = btoa(`${webdavConfig.username}:${webdavConfig.password}`);
-  return { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/json' };
+
+function getR2Headers() {
+  if (!webdavConfig?.url || !webdavConfig?.password) return null;
+  return { 'Content-Type': 'application/json', 'X-Auth-Token': webdavConfig.password };
 }
-async function syncToWebDAV() {
-  if (!webdavConfig) return;
-  const headers = getWebDAVHeaders();
+
+// 节流：避免频繁上传（500ms 内多次变更只触发一次）
+let _syncTimer = null;
+function afterDataChange() {
+  clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(() => syncToR2(), 500);
+}
+
+async function syncToR2() {
+  const headers = getR2Headers();
   if (!headers) return;
-  const dataToUpload = { version: 1, timestamp: Date.now(), mistakes: db.map(({questionImg, solutionImg, ...rest}) => rest) }; // 去掉冗余的旧图片字段
+  const payload = JSON.stringify({
+    version: 2,
+    timestamp: Date.now(),
+    config: subjectTypeConfig,
+    mistakes: db.map(({ questionImg, solutionImg, ...rest }) => rest)
+  });
   try {
-    const response = await fetch(webdavConfig.url, { method: 'PUT', headers, body: JSON.stringify(dataToUpload) });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    console.log('WebDAV 同步成功');
-  } catch (err) { console.error('WebDAV 上传失败', err); }
+    const res = await fetch(webdavConfig.url, { method: 'PUT', headers, body: payload });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    console.log('[R2] 上传成功');
+  } catch (err) {
+    console.error('[R2] 上传失败', err);
+  }
 }
-async function syncFromWebDAV() {
-  if (!webdavConfig) return;
-  const headers = getWebDAVHeaders();
+
+async function syncFromR2() {
+  const headers = getR2Headers();
   if (!headers) return;
   try {
-    const response = await fetch(webdavConfig.url, { method: 'GET', headers });
-    if (response.status === 404) return;
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const remote = await response.json();
-    if (remote.mistakes && remote.version === 1) {
-      const localMap = new Map(db.map(d => [d.id, d]));
-      let changed = false;
-      for (const rItem of remote.mistakes) {
-        const local = localMap.get(rItem.id);
-        if (!local || (rItem.date && rItem.date > local.date)) {
-          localMap.set(rItem.id, rItem);
-          changed = true;
-        }
+    const res = await fetch(webdavConfig.url, { method: 'GET', headers });
+    if (!res.ok) { if (res.status !== 404) throw new Error(`HTTP ${res.status}`); return; }
+    const remote = await res.json();
+    if (!remote.mistakes || remote.version !== 2) return;
+
+    // 合并配置
+    if (remote.config) {
+      subjectTypeConfig = { ...remote.config, ...subjectTypeConfig };
+      // 远程有本地没有的科目，补入
+      for (const [subj, types] of Object.entries(remote.config)) {
+        if (!subjectTypeConfig[subj]) subjectTypeConfig[subj] = types;
       }
-      if (changed) {
-        db = Array.from(localMap.values());
-        for (const item of db) await saveToIDB(item);
-        renderAll();
-        console.log('从 WebDAV 合并了远程数据');
+      await saveConfig();
+    }
+
+    // 合并错题：以 date 最新的为准，支持删除标记
+    const localMap = new Map(db.map(d => [d.id, d]));
+    let changed = false;
+    for (const rItem of remote.mistakes) {
+      const local = localMap.get(rItem.id);
+      if (rItem._deleted) {
+        // 远端已删除
+        if (localMap.has(rItem.id)) { localMap.delete(rItem.id); await deleteFromIDB(rItem.id); changed = true; }
+        continue;
+      }
+      if (!local || rItem.date > local.date) {
+        localMap.set(rItem.id, rItem);
+        await saveToIDB(rItem);
+        changed = true;
       }
     }
-  } catch (err) { console.error('WebDAV 下载失败', err); }
-}
-function afterDataChange() { syncToWebDAV(); } // 每次数据变动后自动上传
-function openWebDAVSetup() {
-  if (webdavConfig) {
-    document.getElementById('webdav-url').value = webdavConfig.url || '';
-    document.getElementById('webdav-username').value = webdavConfig.username || '';
-    document.getElementById('webdav-password').value = webdavConfig.password || '';
-  } else {
-    document.getElementById('webdav-url').value = '';
-    document.getElementById('webdav-username').value = '';
-    document.getElementById('webdav-password').value = '';
+    if (changed) { db = Array.from(localMap.values()); renderAll(); }
+    console.log('[R2] 同步完成');
+  } catch (err) {
+    console.error('[R2] 下载失败', err);
   }
+}
+
+async function clearRemoteData() {
+  const headers = getR2Headers();
+  if (!headers) { await uiAlert('请先填写并保存 Worker 地址和 Token', { title: '未配置', iconClass: 'warn', icon: 'ti-alert-circle' }); return; }
+  const ok = await uiConfirm('确认清空云端数据？本地数据不受影响。', { title: '清空云端', icon: 'ti-trash', iconClass: 'danger', confirmLabel: '确认清空' });
+  if (!ok) return;
+  try {
+    const res = await fetch(webdavConfig.url, { method: 'DELETE', headers });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    await uiAlert('云端数据已清空', { title: '完成', iconClass: 'info' });
+  } catch (err) {
+    await uiAlert('清空失败：' + err.message, { title: '错误', iconClass: 'danger', icon: 'ti-alert-circle' });
+  }
+}
+
+function openWebDAVSetup() {
+  document.getElementById('webdav-url').value = webdavConfig?.url || '';
+  document.getElementById('webdav-password').value = webdavConfig?.password || '';
   document.getElementById('webdav-modal').classList.add('open');
 }
 function closeWebDAVSetup() { document.getElementById('webdav-modal').classList.remove('open'); }
 document.getElementById('webdav-modal').addEventListener('click', function(e) { if (e.target === this) closeWebDAVSetup(); });
+
 async function saveWebDAVConfigAndSync() {
   const url = document.getElementById('webdav-url').value.trim();
-  const username = document.getElementById('webdav-username').value.trim();
-  const password = document.getElementById('webdav-password').value;
-  if (!url || !username || !password) { await uiAlert('请完整填写 WebDAV 地址、用户名和密码', { title: '信息不完整', iconClass: 'warn' }); return; }
-  saveWebDAVConfigToLocal(url, username, password);
+  const password = document.getElementById('webdav-password').value.trim();
+  if (!url || !password) { await uiAlert('请填写 Worker 地址和 Token', { title: '信息不完整', iconClass: 'warn', icon: 'ti-alert-circle' }); return; }
+  saveWebDAVConfigToLocal(url, password);
   closeWebDAVSetup();
-  await uiAlert('配置已保存，正在从网盘同步...', { title: '提示', iconClass: 'info', confirmLabel: '好的' });
-  await syncFromWebDAV();
-  await syncToWebDAV();
+  await uiAlert('配置已保存，正在从云端同步…', { title: '提示', iconClass: 'info', confirmLabel: '好的' });
+  await syncFromR2();
+  await syncToR2();
 }
 
 // ========================= 初始化 =========================
@@ -1048,7 +1082,7 @@ async function saveWebDAVConfigAndSync() {
   }
   loadWebDAVConfig();
   renderAll();
-  if (webdavConfig) await syncFromWebDAV(); // 启动时自动从网盘拉取
+  if (webdavConfig) await syncFromR2(); // 启动时自动从云端拉取
 })();
 </script>
 </body>
