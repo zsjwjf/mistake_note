@@ -329,6 +329,112 @@
 
   .sync-status { font-size: 12px; color: var(--text-hint); display: flex; align-items: center; gap: 5px; }
   .sync-status i { font-size: 14px; }
+
+  /* ---- Rich text toolbar ---- */
+  .editor-wrap { position: relative; }
+  .rte-toolbar {
+    display: none; align-items: center; gap: 2px;
+    padding: 4px 6px; background: var(--bg-primary);
+    border: 1px solid var(--border-mid); border-bottom: none;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    flex-wrap: wrap;
+  }
+  .editor-wrap.focused .rte-toolbar { display: flex; }
+  .editor-wrap.focused .rich-editor { border-radius: 0 0 var(--radius-md) var(--radius-md); }
+  .rte-btn {
+    width: 28px; height: 26px; display: flex; align-items: center; justify-content: center;
+    border: none; background: none; cursor: pointer; border-radius: 5px;
+    color: var(--text-secondary); font-size: 14px; font-family: inherit;
+    transition: background 0.1s, color 0.1s;
+    flex-shrink: 0;
+  }
+  .rte-btn:hover { background: var(--bg-secondary); color: var(--text-primary); }
+  .rte-btn.active { background: var(--bg-tertiary); color: var(--text-primary); }
+  .rte-sep { width: 1px; height: 18px; background: var(--border-light); margin: 0 3px; flex-shrink: 0; }
+  .rte-color-wrap { position: relative; display: flex; align-items: center; }
+  .rte-color-swatch {
+    width: 28px; height: 26px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; border-radius: 5px; border: none; background: none;
+    transition: background 0.1s;
+  }
+  .rte-color-swatch:hover { background: var(--bg-secondary); }
+  .rte-color-bar { width: 16px; height: 3px; border-radius: 2px; margin-top: 2px; }
+  .rte-color-palette {
+    display: none; position: absolute; top: 110%; left: 0; z-index: 200;
+    background: var(--bg-primary); border: 1px solid var(--border-mid);
+    border-radius: var(--radius-md); padding: 7px; box-shadow: 0 4px 16px rgba(0,0,0,0.14);
+    width: 148px; flex-wrap: wrap; gap: 4px;
+  }
+  .rte-color-palette.open { display: flex; }
+  .rte-color-dot {
+    width: 20px; height: 20px; border-radius: 50%; cursor: pointer;
+    border: 2px solid transparent; transition: border-color 0.1s, transform 0.1s;
+    flex-shrink: 0;
+  }
+  .rte-color-dot:hover { border-color: var(--border-strong); transform: scale(1.15); }
+  .rte-color-dot[data-color="inherit"] { background: var(--bg-secondary); border: 2px solid var(--border-mid); position: relative; }
+  .rte-color-dot[data-color="inherit"]::after { content: "✕"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--text-secondary); }
+
+  /* ---- Knowledge Notes tab ---- */
+  .notes-layout { display: grid; grid-template-columns: 220px 1fr; gap: 16px; min-height: 60vh; }
+  @media (max-width: 600px) { .notes-layout { grid-template-columns: 1fr; } }
+  .notes-sidebar {
+    background: var(--bg-primary); border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column;
+  }
+  .notes-sidebar-header {
+    padding: 10px 14px; border-bottom: 1px solid var(--border-light);
+    font-size: 12px; font-weight: 600; color: var(--text-secondary);
+    letter-spacing: 0.04em; text-transform: uppercase; flex-shrink: 0;
+  }
+  .notes-tag-list { flex: 1; overflow-y: auto; }
+  .notes-tag-item {
+    display: flex; align-items: center; gap: 8px; padding: 9px 14px;
+    cursor: pointer; font-size: 13px; color: var(--text-primary);
+    border-bottom: 1px solid var(--border-light); transition: background 0.12s;
+    user-select: none;
+  }
+  .notes-tag-item:last-child { border-bottom: none; }
+  .notes-tag-item:hover { background: var(--bg-secondary); }
+  .notes-tag-item.active { background: var(--info-bg); color: var(--info-text); font-weight: 500; }
+  .notes-tag-item .tag-count { margin-left: auto; font-size: 11px; color: var(--text-hint); background: var(--bg-secondary); padding: 1px 6px; border-radius: 8px; }
+  .notes-tag-item.active .tag-count { background: rgba(0,0,0,0.08); }
+  .notes-tag-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--info-text); flex-shrink: 0; }
+  .notes-tag-dot.has-note { background: var(--success-text); }
+
+  .notes-editor-panel {
+    background: var(--bg-primary); border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg); display: flex; flex-direction: column; overflow: hidden;
+  }
+  .notes-editor-header {
+    padding: 12px 16px; border-bottom: 1px solid var(--border-light);
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-shrink: 0;
+  }
+  .notes-editor-title { font-size: 15px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+  .notes-editor-meta { font-size: 11px; color: var(--text-hint); }
+  .notes-editor-actions { display: flex; gap: 6px; align-items: center; }
+  .notes-related { padding: 10px 16px; border-bottom: 1px solid var(--border-light); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; flex-shrink: 0; }
+  .notes-related-label { font-size: 11px; color: var(--text-hint); margin-right: 4px; }
+  .notes-related-link { font-size: 11px; padding: 3px 9px; background: var(--bg-secondary); border-radius: 10px; color: var(--text-secondary); border: 1px solid var(--border-light); cursor: pointer; transition: all 0.12s; }
+  .notes-related-link:hover { color: var(--text-primary); background: var(--bg-tertiary); }
+  .notes-content-editor {
+    flex: 1; padding: 16px; font-size: 14px; line-height: 1.8;
+    color: var(--text-primary); outline: none; overflow-y: auto;
+    min-height: 300px; white-space: pre-wrap; word-break: break-word;
+  }
+  .notes-content-editor[placeholder]:empty:before { content: attr(placeholder); color: var(--text-hint); pointer-events: none; display: block; }
+  .notes-content-editor img { max-width: 100%; border-radius: 4px; margin: 4px 0; cursor: pointer; border: 1px solid var(--border-light); display: block; }
+  .notes-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; color: var(--text-secondary); padding: 3rem 1rem; text-align: center; }
+  .notes-empty i { font-size: 40px; color: var(--text-hint); margin-bottom: 12px; }
+  .notes-empty p { font-size: 13px; max-width: 220px; line-height: 1.6; }
+  .notes-save-indicator { font-size: 12px; color: var(--success-text); display: flex; align-items: center; gap: 4px; opacity: 0; transition: opacity 0.3s; }
+  .notes-save-indicator.show { opacity: 1; }
+
+  .notes-editor-toolbar {
+    display: flex; align-items: center; gap: 2px;
+    padding: 6px 16px; border-bottom: 1px solid var(--border-light);
+    background: var(--bg-secondary); flex-wrap: wrap; flex-shrink: 0;
+  }
 </style>
 </head>
 <body>
@@ -348,6 +454,7 @@
   <div class="tabs">
     <button class="tab active" onclick="switchTab('list',this)">全部错题</button>
     <button class="tab" onclick="switchTab('review',this)">待复习</button>
+    <button class="tab" onclick="switchTab('notes',this)">知识点笔记</button>
     <button class="tab" onclick="switchTab('stats',this)">数据分析</button>
   </div>
 
@@ -367,6 +474,39 @@
   <div id="page-review" class="page">
     <p style="font-size:13px;color:var(--text-secondary);margin-bottom:1rem;">显示"未掌握"和"模糊"的题目，按添加时间排序。</p>
     <div class="cards" id="review-list"></div>
+  </div>
+
+  <div id="page-notes" class="page">
+    <div class="notes-layout">
+      <div class="notes-sidebar">
+        <div class="notes-sidebar-header"><i class="ti ti-tag" style="vertical-align:-2px"></i> 知识点标签</div>
+        <div class="notes-tag-list" id="notes-tag-list">
+          <div class="empty-state" style="padding:2rem 0.5rem"><i class="ti ti-mood-empty" style="font-size:28px;display:block;margin-bottom:8px"></i><p style="font-size:12px">暂无知识点标签</p></div>
+        </div>
+      </div>
+      <div class="notes-editor-panel" id="notes-editor-panel">
+        <div class="notes-empty" id="notes-empty-state">
+          <i class="ti ti-notes"></i>
+          <p>从左侧选择一个知识点<br>开始编写学习笔记</p>
+        </div>
+        <div id="notes-editor-content" style="display:none;display:none;flex-direction:column;flex:1;overflow:hidden;">
+          <div class="notes-editor-header">
+            <div>
+              <div class="notes-editor-title"><i class="ti ti-bookmark"></i> <span id="notes-current-tag">—</span></div>
+              <div class="notes-editor-meta" id="notes-editor-meta"></div>
+            </div>
+            <div class="notes-editor-actions">
+              <span class="notes-save-indicator" id="notes-save-indicator"><i class="ti ti-check"></i> 已保存</span>
+            </div>
+          </div>
+          <div class="notes-related" id="notes-related" style="display:none"></div>
+          <div class="notes-editor-toolbar" id="notes-rte-toolbar">
+            <!-- toolbar injected by JS -->
+          </div>
+          <div class="notes-content-editor" id="notes-content-editor" contenteditable="true" placeholder="在此记录该知识点的概念、公式、解题技巧……支持 Ctrl+V 粘贴图片"></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div id="page-stats" class="page">
@@ -408,15 +548,24 @@
     </div>
     <div class="form-row">
       <label class="form-label">题目内容（支持混排文字与直接粘贴多张图片）</label>
-      <div class="form-input rich-editor" id="f-question" contenteditable="true" placeholder="在此直接输入文字，或使用 Ctrl+V 粘贴截图..."></div>
+      <div class="editor-wrap" id="wrap-f-question">
+        <div class="rte-toolbar" id="toolbar-f-question"></div>
+        <div class="form-input rich-editor" id="f-question" contenteditable="true" placeholder="在此直接输入文字，或使用 Ctrl+V 粘贴截图..."></div>
+      </div>
     </div>
     <div class="form-row">
       <label class="form-label">我的错因 / 错误分析</label>
-      <div class="form-input rich-editor" id="f-error" contenteditable="true" placeholder="当时哪里想错了？同样支持粘贴图片。" style="min-height:60px;"></div>
+      <div class="editor-wrap" id="wrap-f-error">
+        <div class="rte-toolbar" id="toolbar-f-error"></div>
+        <div class="form-input rich-editor" id="f-error" contenteditable="true" placeholder="当时哪里想错了？同样支持粘贴图片。" style="min-height:60px;"></div>
+      </div>
     </div>
     <div class="form-row">
       <label class="form-label">正确解题思路 *（支持混排文字与直接粘贴多张图片）</label>
-      <div class="form-input rich-editor" id="f-solution" contenteditable="true" placeholder="写下正确的解法、公式、思路，或直接粘贴解析截图..."></div>
+      <div class="editor-wrap" id="wrap-f-solution">
+        <div class="rte-toolbar" id="toolbar-f-solution"></div>
+        <div class="form-input rich-editor" id="f-solution" contenteditable="true" placeholder="写下正确的解法、公式、思路，或直接粘贴解析截图..."></div>
+      </div>
     </div>
     <div class="form-row">
       <label class="form-label">知识点标签（逗号分隔）</label>
@@ -540,6 +689,7 @@ const MASTERY_LABEL = ['未掌握','模糊','已掌握'];
 let db = [];
 const DB_NAME = 'GongkaoBook';
 const STORE_NAME = 'mistakes';
+const NOTES_STORE = 'tagNotes';
 let idb = null;
 let editId = null;
 let subjectTypeConfig = {};
@@ -547,13 +697,14 @@ let subjectTypeConfig = {};
 // 初始化 IndexedDB
 function initDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 4);
+    const request = indexedDB.open(DB_NAME, 5);
     request.onerror = e => reject(e);
     request.onsuccess = e => { idb = e.target.result; resolve(idb); };
     request.onupgradeneeded = e => {
       const db = e.target.result;
       if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME, { keyPath: 'id' });
       if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings');
+      if (!db.objectStoreNames.contains(NOTES_STORE)) db.createObjectStore(NOTES_STORE, { keyPath: 'id' });
     };
   });
 }
@@ -833,7 +984,8 @@ async function saveItem() {
   }
   closeModal(); renderAll(); afterDataChange();
 }
-document.querySelectorAll('.rich-editor').forEach(editor => {
+// ========================= 富文本粘贴（通用） =========================
+function setupRichEditorPaste(editor) {
   editor.addEventListener('paste', function(e) {
     e.preventDefault();
     const clipboardData = e.clipboardData || window.clipboardData;
@@ -857,13 +1009,274 @@ document.querySelectorAll('.rich-editor').forEach(editor => {
       document.execCommand('insertText', false, text);
     }
   });
+}
+document.querySelectorAll('.rich-editor').forEach(setupRichEditorPaste);
+
+// ========================= 富文本工具栏 =========================
+const RTE_COLORS = [
+  { color: 'inherit', label: '默认色' },
+  { color: '#1a1a18', label: '黑色' },
+  { color: '#E24B4A', label: '红色' },
+  { color: '#D85A30', label: '橙色' },
+  { color: '#BA7517', label: '棕黄' },
+  { color: '#1D9E75', label: '绿色' },
+  { color: '#378ADD', label: '蓝色' },
+  { color: '#7F77DD', label: '紫色' },
+  { color: '#D4537E', label: '粉色' },
+  { color: '#6b6b67', label: '灰色' },
+];
+
+let _activeColorPalette = null;
+function closeAllPalettes() {
+  if (_activeColorPalette) { _activeColorPalette.classList.remove('open'); _activeColorPalette = null; }
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.rte-color-wrap')) closeAllPalettes();
 });
+
+function buildToolbar(toolbarEl, editorEl) {
+  let currentColor = '#E24B4A';
+  toolbarEl.innerHTML = '';
+
+  const cmd = (c, val) => { editorEl.focus(); document.execCommand(c, false, val); updateActiveStates(); };
+
+  const makeBtn = (html, title, action, cls = '') => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'rte-btn' + (cls ? ' ' + cls : '');
+    b.title = title;
+    b.innerHTML = html;
+    b.addEventListener('mousedown', e => { e.preventDefault(); action(); });
+    return b;
+  };
+
+  const boldBtn = makeBtn('<i class="ti ti-bold"></i>', '加粗 (Ctrl+B)', () => cmd('bold'));
+  const italicBtn = makeBtn('<i class="ti ti-italic"></i>', '斜体 (Ctrl+I)', () => cmd('italic'));
+  const underlineBtn = makeBtn('<i class="ti ti-underline"></i>', '下划线 (Ctrl+U)', () => cmd('underline'));
+
+  const sep1 = document.createElement('span'); sep1.className = 'rte-sep';
+
+  // Color swatch button
+  const colorWrap = document.createElement('div'); colorWrap.className = 'rte-color-wrap';
+  const colorSwatch = document.createElement('button');
+  colorSwatch.type = 'button'; colorSwatch.className = 'rte-color-swatch'; colorSwatch.title = '文字颜色';
+  const swatchIcon = document.createElement('div');
+  swatchIcon.innerHTML = '<i class="ti ti-letter-a" style="font-size:13px;display:block;line-height:1"></i>';
+  const swatchBar = document.createElement('div'); swatchBar.className = 'rte-color-bar';
+  swatchBar.style.background = currentColor;
+  colorSwatch.appendChild(swatchIcon); colorSwatch.appendChild(swatchBar);
+
+  const palette = document.createElement('div'); palette.className = 'rte-color-palette';
+  RTE_COLORS.forEach(({ color, label }) => {
+    const dot = document.createElement('div'); dot.className = 'rte-color-dot'; dot.title = label;
+    dot.dataset.color = color;
+    if (color === 'inherit') { dot.style.background = 'var(--bg-secondary)'; }
+    else { dot.style.background = color; }
+    dot.addEventListener('mousedown', e => {
+      e.preventDefault(); e.stopPropagation();
+      editorEl.focus();
+      if (color === 'inherit') { document.execCommand('removeFormat', false, null); }
+      else { document.execCommand('foreColor', false, color); currentColor = color; swatchBar.style.background = color; }
+      closeAllPalettes();
+    });
+    palette.appendChild(dot);
+  });
+
+  colorSwatch.addEventListener('mousedown', e => {
+    e.preventDefault(); e.stopPropagation();
+    if (palette.classList.contains('open')) { closeAllPalettes(); }
+    else { closeAllPalettes(); palette.classList.add('open'); _activeColorPalette = palette; }
+  });
+
+  colorWrap.appendChild(colorSwatch); colorWrap.appendChild(palette);
+
+  const sep2 = document.createElement('span'); sep2.className = 'rte-sep';
+
+  const clearBtn = makeBtn('<i class="ti ti-clear-formatting"></i>', '清除格式', () => { editorEl.focus(); document.execCommand('removeFormat', false, null); updateActiveStates(); });
+
+  [boldBtn, italicBtn, underlineBtn, sep1, colorWrap, sep2, clearBtn].forEach(el => toolbarEl.appendChild(el));
+
+  function updateActiveStates() {
+    boldBtn.classList.toggle('active', document.queryCommandState('bold'));
+    italicBtn.classList.toggle('active', document.queryCommandState('italic'));
+    underlineBtn.classList.toggle('active', document.queryCommandState('underline'));
+  }
+
+  editorEl.addEventListener('keyup', updateActiveStates);
+  editorEl.addEventListener('mouseup', updateActiveStates);
+  editorEl.addEventListener('selectionchange', updateActiveStates);
+}
+
+function initEditorWrap(wrapId, editorId, toolbarId) {
+  const wrap = document.getElementById(wrapId);
+  const editor = document.getElementById(editorId);
+  const toolbar = document.getElementById(toolbarId);
+  if (!wrap || !editor || !toolbar) return;
+  buildToolbar(toolbar, editor);
+  editor.addEventListener('focus', () => wrap.classList.add('focused'));
+  editor.addEventListener('blur', e => {
+    // Don't hide toolbar when clicking inside toolbar
+    setTimeout(() => { if (!wrap.contains(document.activeElement)) wrap.classList.remove('focused'); }, 150);
+  });
+}
+
+// Initialize the 3 modal editors
+['f-question', 'f-error', 'f-solution'].forEach(id => {
+  initEditorWrap('wrap-' + id, id, 'toolbar-' + id);
+});
+
+// ========================= 知识点笔记 =========================
+let notesDb = {}; // { tagName: { content: htmlString, updatedAt: timestamp } }
+let currentNoteTag = null;
+let _notesSaveTimer = null;
+
+async function initNotesStore() {
+  // Already handled in initDB upgrade — add store if needed
+}
+
+async function saveNoteToIDB(tag, noteObj) {
+  const tx = idb.transaction(NOTES_STORE, 'readwrite');
+  return new Promise(r => { tx.objectStore(NOTES_STORE).put({ ...noteObj, id: tag }); tx.oncomplete = r; });
+}
+
+async function deleteNoteFromIDB(tag) {
+  const tx = idb.transaction(NOTES_STORE, 'readwrite');
+  return new Promise(r => { tx.objectStore(NOTES_STORE).delete(tag); tx.oncomplete = r; });
+}
+
+async function getAllNotesFromIDB() {
+  const tx = idb.transaction(NOTES_STORE, 'readonly');
+  return new Promise(r => { tx.objectStore(NOTES_STORE).getAll().onsuccess = e => r(e.target.result || []); });
+}
+
+function getAllTags() {
+  const tagSet = new Set();
+  db.forEach(d => (d.tags || []).forEach(t => { if (t) tagSet.add(t); }));
+  return [...tagSet].sort((a, b) => a.localeCompare(b, 'zh'));
+}
+
+function getTagQuestions(tag) {
+  return db.filter(d => (d.tags || []).includes(tag));
+}
+
+function renderNotesTagList() {
+  const container = document.getElementById('notes-tag-list');
+  const tags = getAllTags();
+  if (!tags.length) {
+    container.innerHTML = '<div class="empty-state" style="padding:2rem 0.5rem"><i class="ti ti-mood-empty" style="font-size:28px;display:block;margin-bottom:8px"></i><p style="font-size:12px">暂无知识点标签</p></div>';
+    return;
+  }
+  container.innerHTML = tags.map(tag => {
+    const hasNote = notesDb[tag] && notesDb[tag].content && notesDb[tag].content.trim();
+    const count = getTagQuestions(tag).length;
+    return `<div class="notes-tag-item${currentNoteTag === tag ? ' active' : ''}" onclick="selectNoteTag('${esc(tag).replace(/'/g, "\\'")}')">
+      <div class="notes-tag-dot${hasNote ? ' has-note' : ''}"></div>
+      <span style="flex:1;word-break:break-all">${esc(tag)}</span>
+      <span class="tag-count">${count}</span>
+    </div>`;
+  }).join('');
+}
+
+function selectNoteTag(tag) {
+  // Auto-save previous note first
+  if (currentNoteTag) saveCurrentNote(true);
+  currentNoteTag = tag;
+  renderNotesTagList();
+  showNoteEditor(tag);
+}
+
+function showNoteEditor(tag) {
+  document.getElementById('notes-empty-state').style.display = 'none';
+  const editorContent = document.getElementById('notes-editor-content');
+  editorContent.style.display = 'flex';
+  editorContent.style.flexDirection = 'column';
+  editorContent.style.flex = '1';
+  editorContent.style.overflow = 'hidden';
+
+  document.getElementById('notes-current-tag').textContent = tag;
+
+  const note = notesDb[tag];
+  const updatedStr = note && note.updatedAt ? '最后编辑：' + new Date(note.updatedAt).toLocaleString('zh-CN') : '尚未记录';
+  document.getElementById('notes-editor-meta').textContent = updatedStr;
+
+  const editor = document.getElementById('notes-content-editor');
+  editor.innerHTML = (note && note.content) || '';
+
+  // Related questions
+  const related = getTagQuestions(tag);
+  const relDiv = document.getElementById('notes-related');
+  if (related.length) {
+    relDiv.style.display = 'flex';
+    relDiv.innerHTML = `<span class="notes-related-label">相关错题 ${related.length} 道：</span>` +
+      related.slice(0, 8).map(d => `<span class="notes-related-link" onclick="jumpToQuestion('${d.id}')">${esc(d.subject)} · ${esc(d.type)}</span>`).join('');
+  } else {
+    relDiv.style.display = 'none';
+  }
+
+  // Build notes toolbar
+  const toolbar = document.getElementById('notes-rte-toolbar');
+  buildToolbar(toolbar, editor);
+
+  setupRichEditorPaste(editor);
+
+  // Debounced auto-save
+  editor.oninput = () => {
+    clearTimeout(_notesSaveTimer);
+    _notesSaveTimer = setTimeout(() => saveCurrentNote(false), 800);
+  };
+
+  document.getElementById('notes-save-indicator').classList.remove('show');
+}
+
+async function saveCurrentNote(silent) {
+  if (!currentNoteTag) return;
+  const editor = document.getElementById('notes-content-editor');
+  const content = editor.innerHTML.trim();
+  const noteObj = { content, updatedAt: Date.now() };
+  notesDb[currentNoteTag] = noteObj;
+  await saveNoteToIDB(currentNoteTag, noteObj);
+
+  const meta = document.getElementById('notes-editor-meta');
+  if (meta) meta.textContent = '最后编辑：' + new Date(noteObj.updatedAt).toLocaleString('zh-CN');
+
+  if (!silent) {
+    const ind = document.getElementById('notes-save-indicator');
+    if (ind) { ind.classList.add('show'); clearTimeout(ind._t); ind._t = setTimeout(() => ind.classList.remove('show'), 2000); }
+  }
+
+  renderNotesTagList();
+  afterDataChange(); // trigger R2 sync
+}
+
+function jumpToQuestion(id) {
+  // Switch to list tab and highlight
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const listTab = document.querySelector('.tab[onclick*="list"]');
+  if (listTab) listTab.classList.add('active');
+  document.getElementById('page-list').classList.add('active');
+  setTimeout(() => {
+    const el = document.getElementById('c-' + id);
+    if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.style.outline = '2px solid var(--info-text)'; setTimeout(() => el.style.outline = '', 1800); }
+  }, 100);
+}
+
+function renderNotesPage() {
+  renderNotesTagList();
+  // If a tag was previously selected, refresh its related panel
+  if (currentNoteTag && !getAllTags().includes(currentNoteTag)) {
+    currentNoteTag = null;
+    document.getElementById('notes-empty-state').style.display = 'flex';
+    document.getElementById('notes-editor-content').style.display = 'none';
+  }
+}
 function switchTab(name, btn) {
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   btn.classList.add('active'); document.getElementById('page-'+name).classList.add('active');
+  if (name === 'notes') renderNotesPage();
 }
-function renderAll() { renderList(); renderReview(); renderStats(); }
+function renderAll() { renderList(); renderReview(); renderStats(); renderNotesPage(); }
 
 // ========================= 图片漫游（复用原逻辑） =========================
 const inlineImgStates = new WeakMap();
@@ -926,7 +1339,7 @@ document.addEventListener('click', function(e) {
 
 // ========================= 导出 / 导入（保留原功能） =========================
 async function exportBackup() {
-  const data = { config: subjectTypeConfig, mistakes: db };
+  const data = { config: subjectTypeConfig, mistakes: db, notes: notesDb };
   const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = `公考错题本_${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(url);
@@ -941,7 +1354,14 @@ async function importBackup(input) {
     if (ok) {
       subjectTypeConfig = imported.config; await saveConfig();
       for (const item of imported.mistakes) { await saveToIDB(item); }
-      db = await getAllFromIDB(); renderAll(); afterDataChange();
+      db = await getAllFromIDB();
+      if (imported.notes) {
+        for (const [tag, note] of Object.entries(imported.notes)) {
+          notesDb[tag] = note;
+          await saveNoteToIDB(tag, { ...note, id: tag });
+        }
+      }
+      renderAll(); afterDataChange();
     }
     input.value = '';
   };
@@ -977,10 +1397,11 @@ async function syncToR2() {
   const headers = getR2Headers();
   if (!headers) return;
   const payload = JSON.stringify({
-    version: 2,
+    version: 3,
     timestamp: Date.now(),
     config: subjectTypeConfig,
-    mistakes: db.map(({ questionImg, solutionImg, ...rest }) => rest)
+    mistakes: db.map(({ questionImg, solutionImg, ...rest }) => rest),
+    notes: notesDb
   });
   try {
     const res = await fetch(webdavConfig.url, { method: 'PUT', headers, body: payload });
@@ -998,25 +1419,23 @@ async function syncFromR2() {
     const res = await fetch(webdavConfig.url, { method: 'GET', headers });
     if (!res.ok) { if (res.status !== 404) throw new Error(`HTTP ${res.status}`); return; }
     const remote = await res.json();
-    if (!remote.mistakes || remote.version !== 2) return;
+    if (!remote.mistakes || (remote.version !== 2 && remote.version !== 3)) return;
 
     // 合并配置
     if (remote.config) {
       subjectTypeConfig = { ...remote.config, ...subjectTypeConfig };
-      // 远程有本地没有的科目，补入
       for (const [subj, types] of Object.entries(remote.config)) {
         if (!subjectTypeConfig[subj]) subjectTypeConfig[subj] = types;
       }
       await saveConfig();
     }
 
-    // 合并错题：以 date 最新的为准，支持删除标记
+    // 合并错题
     const localMap = new Map(db.map(d => [d.id, d]));
     let changed = false;
     for (const rItem of remote.mistakes) {
       const local = localMap.get(rItem.id);
       if (rItem._deleted) {
-        // 远端已删除
         if (localMap.has(rItem.id)) { localMap.delete(rItem.id); await deleteFromIDB(rItem.id); changed = true; }
         continue;
       }
@@ -1026,7 +1445,20 @@ async function syncFromR2() {
         changed = true;
       }
     }
-    if (changed) { db = Array.from(localMap.values()); renderAll(); }
+    if (changed) { db = Array.from(localMap.values()); }
+
+    // 合并知识点笔记（以 updatedAt 最新为准）
+    if (remote.notes) {
+      for (const [tag, rNote] of Object.entries(remote.notes)) {
+        const local = notesDb[tag];
+        if (!local || rNote.updatedAt > local.updatedAt) {
+          notesDb[tag] = rNote;
+          await saveNoteToIDB(tag, { ...rNote, id: tag });
+        }
+      }
+    }
+
+    renderAll();
     console.log('[R2] 同步完成');
   } catch (err) {
     console.error('[R2] 下载失败', err);
@@ -1080,9 +1512,13 @@ async function saveWebDAVConfigAndSync() {
     const oldData = JSON.parse(localStorage.getItem('qb_v2') || '[]');
     if (oldData.length > 0) { for (const item of oldData) await saveToIDB(item); db = await getAllFromIDB(); }
   }
+  // Load notes
+  const notesList = await getAllNotesFromIDB();
+  notesList.forEach(n => { if (n.id) notesDb[n.id] = n; });
+
   loadWebDAVConfig();
   renderAll();
-  if (webdavConfig) await syncFromR2(); // 启动时自动从云端拉取
+  if (webdavConfig) await syncFromR2();
 })();
 </script>
 </body>
