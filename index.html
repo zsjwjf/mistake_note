@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>公考错题本</title>
+<title>错题本</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='32' height='32' rx='7' fill='%231a56db'/%3E%3Crect x='7' y='5' width='14' height='18' rx='2' fill='white' opacity='.95'/%3E%3Crect x='7' y='5' width='4' height='18' rx='2' fill='%2393c5fd' opacity='.7'/%3E%3Cline x1='12' y1='10' x2='19' y2='10' stroke='%231a56db' stroke-width='1.2' stroke-linecap='round'/%3E%3Cline x1='12' y1='13' x2='19' y2='13' stroke='%231a56db' stroke-width='1.2' stroke-linecap='round'/%3E%3Cline x1='12' y1='16' x2='16' y2='16' stroke='%231a56db' stroke-width='1.2' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='22' r='7' fill='%23ef4444'/%3E%3Cpath d='M19 22l2 2 4-4' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" />
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -577,7 +578,7 @@
   <div id="page-list" class="page active">
     <div class="filters">
       <input type="text" id="search" placeholder="搜索关键词…" oninput="renderList()" />
-      <select id="filter-subject" onchange="renderList()"><option value="">全部科目</option></select>
+      <select id="filter-subject" onchange="onFilterSubjectChange()"><option value="">全部科目</option></select>
       <select id="filter-type" onchange="renderList()"><option value="">全部题型</option></select>
       <select id="filter-mastery" onchange="renderList()">
         <option value="">所有掌握度</option>
@@ -884,8 +885,24 @@ function updateSubjectFilter() {
 function updateTypeFilter() {
   const sel = document.getElementById('filter-type');
   const cur = sel.value;
+  const selectedSubject = document.getElementById('filter-subject').value;
   sel.innerHTML = '<option value="">全部题型</option>';
-  getAllTypes().forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; if (t === cur) o.selected = true; sel.appendChild(o); });
+  const types = selectedSubject ? getTypesForSubject(selectedSubject) : getAllTypes();
+  types.sort((a, b) => a.localeCompare(b, 'zh')).forEach(t => {
+    const o = document.createElement('option');
+    o.value = t; o.textContent = t;
+    if (t === cur) o.selected = true;
+    sel.appendChild(o);
+  });
+  // 如果当前选中的题型不在新列表中，重置并重新渲染
+  if (cur && !types.includes(cur)) {
+    sel.value = '';
+    renderList();
+  }
+}
+function onFilterSubjectChange() {
+  document.getElementById('filter-type').value = '';
+  renderList();
 }
 function updateFilters() { updateSubjectFilter(); updateTypeFilter(); }
 function populateSubjectSelect(selectedVal) {
