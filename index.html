@@ -915,7 +915,7 @@ async function saveConfig() {
 }
 
 // 辅助函数
-function getAllSubjects() { const set = new Set(Object.keys(subjectTypeConfig)); db.forEach(d => { if (d.subject) set.add(d.subject); }); return [...set].sort((a,b) => a.localeCompare(b, 'zh')); }
+function getAllSubjects() { return Object.keys(subjectTypeConfig).sort((a,b) => a.localeCompare(b, 'zh')); }
 function getTypesForSubject(subject) { const types = subjectTypeConfig[subject]; if (types && types.length) return [...types]; return ['其他']; }
 function getAllTypes() { const set = new Set(); Object.values(subjectTypeConfig).forEach(types => types.forEach(t => set.add(t))); db.forEach(d => { if (d.type) set.add(d.type); }); return [...set].sort((a,b) => a.localeCompare(b, 'zh')); }
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -2003,6 +2003,8 @@ async function syncFromR2() {
     }
   }
   if (changed) { db = Array.from(localMap.values()); }
+  // 将云端错题中已不存在于 subjectTypeConfig 的科目字段不做处理
+  // 真正的问题在 getAllSubjects，改为只读 subjectTypeConfig
 
   // 合并知识点笔记（以 updatedAt 最新为准）
   if (remote.notes) {
