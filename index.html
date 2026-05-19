@@ -1927,8 +1927,8 @@ async function manualSync() {
   }
   setSyncState('syncing');
   try {
-    await syncFromR2();
     await syncToR2();
+    await syncFromR2();
     setSyncState('success');
   } catch (err) {
     setSyncState('fail');
@@ -1981,11 +1981,9 @@ async function syncFromR2() {
   if (!remote.mistakes || (remote.version !== 2 && remote.version !== 3)) return;
 
   // 合并配置
+  // 配置直接以云端为准（此时云端已是刚上传的本地数据）
   if (remote.config) {
-    subjectTypeConfig = { ...remote.config, ...subjectTypeConfig };
-    for (const [subj, types] of Object.entries(remote.config)) {
-      if (!subjectTypeConfig[subj]) subjectTypeConfig[subj] = types;
-    }
+    subjectTypeConfig = remote.config;
     await saveConfig();
   }
 
