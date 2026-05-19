@@ -828,6 +828,38 @@ const STORE_NAME = 'mistakes';
 const NOTES_STORE = 'tagNotes';
 let idb = null;
 let editId = null;
+ // ========================= R2 图片上传 =========================
+async function uploadImageToR2(base64DataUrl) {
+  const headers = getR2Headers();
+  if (!headers) return base64DataUrl; // 未配置云同步，降级保留 base64
+  // 解析 base64
+  const [meta, data] = base64DataUrl.split(',');
+  const ct = meta.match(/:(.*?);/)[1];
+  const binary = atob(data);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  // 生成唯一 key
+  const key = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  const res = await fetch(webdavConfig.url + '/img/' + key, {
+    method: 'PUT',
+    headers: { 'Content-Type': ct, 'X-Auth-Token': webdavConfig.password },
+    body: bytes.buffer,
+  });
+  if (!res.ok) throw new Error('图片上传失败 HTTP ' + res.status);
+  return webdavConfig.url + '/img/' + key;
+}
+
+async function deleteImageFromR2(url) {
+  if (!url || !url.includes('/img/') || !webdavConfig?.url) return;
+  const key = url.split('/img/')[1];
+  if (!key) return;
+  try {
+    await fetch(webdavConfig.url + '/img/' + key, {
+      method: 'DELETE',
+      headers: { 'X-Auth-Token': webdavConfig.password },
+    });
+  } catch { /* 忽略删除失败 */ }
+}
 let subjectTypeConfig = {};
 
 // 初始化 IndexedDB
@@ -1079,7 +1111,18 @@ async function setMastery(id, val) {
 async function deleteItem(id) {
   const ok = await uiConfirm('确认删除这道错题？此操作不可撤销。', { title: '删除错题', icon: 'ti-trash', iconClass: 'danger', confirmLabel: '确认删除' });
   if (!ok) return;
-  db = db.filter(d=>d.id!==id); await deleteFromIDB(id); renderAll(); afterDataChange();
+  const item = db.find(d => d.id === id);
+  db = db.filter(d=>d.id!==id); await deleteFromIDB(id);
+  // 异步清理 R2 图片（不阻塞UI）
+  if (item) {
+    const parser = new DOMParser();
+    for (const field of [item.question, item.error, item.solution]) {
+      if (!field) continue;
+      const doc = parser.parseFromString(field, 'text/html');
+      doc.querySelectorAll('img').forEach(img => deleteImageFromR2(img.src));
+    }
+  }
+  renderAll(); afterDataChange();
 }
 function openModal() {
   editId = null;
@@ -1323,9 +1366,34 @@ function setupRichEditorPaste(editor) {
         hasImage = true;
         const blob = item.getAsFile();
         const reader = new FileReader();
-        reader.onload = function(event) {
+        reader.onload = async function(event) {
           const base64 = event.target.result;
-          document.execCommand('insertHTML', false, `<img src="${base64}" />`);
+          // 先插入 base64 占位，再异步上传替换
+          const imgEl = document.createElement('img');
+          imgEl.src = base64;
+          imgEl.style.opacity = '0.5';
+          imgEl.title = '上传中…';
+          // 插入到光标位置
+          const sel = window.getSelection();
+          if (sel && sel.rangeCount) {
+            const range = sel.getRangeAt(0);
+            range.collapse(false);
+            range.insertNode(imgEl);
+            range.setStartAfter(imgEl);
+            sel.removeAllRanges(); sel.addRange(range);
+          } else {
+            editor.appendChild(imgEl);
+          }
+          try {
+            const remoteUrl = await uploadImageToR2(base64);
+            imgEl.src = remoteUrl;
+            imgEl.style.opacity = '';
+            imgEl.title = '';
+          } catch {
+            // 上传失败保留 base64
+            imgEl.style.opacity = '';
+            imgEl.title = '图片未上传至云端';
+          }
         };
         reader.readAsDataURL(blob);
       }
@@ -1875,12 +1943,29 @@ async function manualSync() {
 async function syncToR2() {
   const headers = getR2Headers();
   if (!headers) return;
+  // 剥除仍以 base64 存储的图片（未配置 R2 时的降级数据），避免 JSON 体积爆炸
+  function stripBase64Imgs(html) {
+    if (!html) return html;
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    div.querySelectorAll('img').forEach(img => {
+      if (img.src.startsWith('data:')) img.src = '[图片未同步]';
+    });
+    return div.innerHTML;
+  }
   const payload = JSON.stringify({
     version: 3,
     timestamp: Date.now(),
     config: subjectTypeConfig,
-    mistakes: db.map(({ questionImg, solutionImg, ...rest }) => rest),
-    notes: notesDb,
+    mistakes: db.map(({ questionImg, solutionImg, ...rest }) => ({
+      ...rest,
+      question: stripBase64Imgs(rest.question),
+      error: stripBase64Imgs(rest.error),
+      solution: stripBase64Imgs(rest.solution),
+    })),
+    notes: Object.fromEntries(
+      Object.entries(notesDb).map(([k, v]) => [k, { ...v, content: stripBase64Imgs(v.content) }])
+    ),
     standaloneTags
   });
   const res = await fetch(webdavConfig.url, { method: 'PUT', headers, body: payload });
