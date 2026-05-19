@@ -1124,17 +1124,21 @@ async function deleteItem(id) {
   const ok = await uiConfirm('确认删除这道错题？此操作不可撤销。', { title: '删除错题', icon: 'ti-trash', iconClass: 'danger', confirmLabel: '确认删除' });
   if (!ok) return;
   const item = db.find(d => d.id === id);
-  db = db.filter(d=>d.id!==id); await deleteFromIDB(id);
-  // 异步清理 R2 图片（不阻塞UI）
-  if (item) {
-    const parser = new DOMParser();
-    for (const field of [item.question, item.error, item.solution]) {
-      if (!field) continue;
-      const doc = parser.parseFromString(field, 'text/html');
-      doc.querySelectorAll('img').forEach(img => deleteImageFromR2(img.src));
+  db = db.filter(d => d.id !== id);
+  await deleteFromIDB(id);
+  renderAll();
+  // 异步清理：同步元数据到 R2，再删除图片（不阻塞 UI）
+  if (webdavConfig?.url && webdavConfig?.password) {
+    syncToR2().catch(err => showErrorToast('同步失败', err.message));
+    if (item) {
+      const parser = new DOMParser();
+      for (const field of [item.question, item.error, item.solution]) {
+        if (!field) continue;
+        const doc = parser.parseFromString(field, 'text/html');
+        doc.querySelectorAll('img').forEach(img => deleteImageFromR2(img.src));
+      }
     }
   }
-  renderAll(); afterDataChange();
 }
 function openModal() {
   editId = null;
