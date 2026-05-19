@@ -860,6 +860,18 @@ async function deleteImageFromR2(url) {
     });
   } catch { /* 忽略删除失败 */ }
 }
+ // 扫描 el 内所有 base64 img，上传到 R2 并替换 src；返回处理后的 innerHTML
+async function uploadBase64ImgsInEl(el) {
+  const imgs = [...el.querySelectorAll('img')].filter(img => img.src.startsWith('data:'));
+  await Promise.all(imgs.map(async img => {
+    try {
+      img.src = await uploadImageToR2(img.src);
+    } catch {
+      // 上传失败保留 base64，不阻断保存
+    }
+  }));
+  return el.innerHTML;
+}
 let subjectTypeConfig = {};
 
 // 初始化 IndexedDB
@@ -1159,15 +1171,20 @@ function editItem(id) {
 async function saveItem() {
   const subject = document.getElementById('f-subject').value;
   const type = document.getElementById('f-type').value;
-  const solutionHtml = document.getElementById('f-solution').innerHTML.trim();
   if (!subject) { await uiAlert('请选择科目', { title: '请补充信息', iconClass: 'warn', icon: 'ti-alert-circle' }); return; }
   if (!type) { await uiAlert('请选择题型', { title: '请补充信息', iconClass: 'warn', icon: 'ti-alert-circle' }); return; }
-  if (!solutionHtml) { await uiAlert('请填写解题思路', { title: '请补充信息', iconClass: 'warn', icon: 'ti-alert-circle' }); return; }
+  if (!document.getElementById('f-solution').innerHTML.trim()) { await uiAlert('请填写解题思路', { title: '请补充信息', iconClass: 'warn', icon: 'ti-alert-circle' }); return; }
+  // 保存前批量上传编辑器内的 base64 图片（已配置 R2 时生效）
+  const [questionHtml, errorHtml, solutionHtml] = await Promise.all([
+    uploadBase64ImgsInEl(document.getElementById('f-question')),
+    uploadBase64ImgsInEl(document.getElementById('f-error')),
+    uploadBase64ImgsInEl(document.getElementById('f-solution')),
+  ]);
   const itemData = {
     subject, type,
-    question: document.getElementById('f-question').innerHTML.trim(),
-    error: document.getElementById('f-error').innerHTML.trim(),
-    solution: solutionHtml,
+    question: questionHtml.trim(),
+    error: errorHtml.trim(),
+    solution: solutionHtml.trim(),
     tags: getTagPills(),
     source: document.getElementById('f-source').value.trim(),
   };
@@ -1366,34 +1383,9 @@ function setupRichEditorPaste(editor) {
         hasImage = true;
         const blob = item.getAsFile();
         const reader = new FileReader();
-        reader.onload = async function(event) {
+        reader.onload = function(event) {
           const base64 = event.target.result;
-          // 先插入 base64 占位，再异步上传替换
-          const imgEl = document.createElement('img');
-          imgEl.src = base64;
-          imgEl.style.opacity = '0.5';
-          imgEl.title = '上传中…';
-          // 插入到光标位置
-          const sel = window.getSelection();
-          if (sel && sel.rangeCount) {
-            const range = sel.getRangeAt(0);
-            range.collapse(false);
-            range.insertNode(imgEl);
-            range.setStartAfter(imgEl);
-            sel.removeAllRanges(); sel.addRange(range);
-          } else {
-            editor.appendChild(imgEl);
-          }
-          try {
-            const remoteUrl = await uploadImageToR2(base64);
-            imgEl.src = remoteUrl;
-            imgEl.style.opacity = '';
-            imgEl.title = '';
-          } catch {
-            // 上传失败保留 base64
-            imgEl.style.opacity = '';
-            imgEl.title = '图片未上传至云端';
-          }
+          document.execCommand('insertHTML', false, `<img src="${base64}" />`);
         };
         reader.readAsDataURL(blob);
       }
