@@ -920,6 +920,11 @@ function getTypesForSubject(subject) { const types = subjectTypeConfig[subject];
 function getAllTypes() { const set = new Set(); Object.values(subjectTypeConfig).forEach(types => types.forEach(t => set.add(t))); db.forEach(d => { if (d.type) set.add(d.type); }); return [...set].sort((a,b) => a.localeCompare(b, 'zh')); }
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
+function lazyImgs(html) {
+  if (!html) return html;
+  return html.replace(/<img /gi, '<img loading="lazy" decoding="async" ');
+}
+ 
 function updateSubjectFilter() {
   const sel = document.getElementById('filter-subject');
   const cur = sel.value;
@@ -1041,7 +1046,7 @@ async function promptEditSubject(oldName) {
 
 function renderImageWithViewer(src, alt) {
   if (!src) return '';
-  return `<div class="img-viewer-wrap"><img class="content-image viewer-img" src="${src}" alt="${alt}" draggable="false" onload="onImgLoad(this)" /><div class="img-viewer-toolbar"><button class="icon-btn" onclick="zoomInline(this, -0.2)" title="缩小"><i class="ti ti-zoom-out"></i></button><button class="icon-btn" onclick="zoomInline(this, 0.2)" title="放大"><i class="ti ti-zoom-in"></i></button><button class="icon-btn" onclick="openFullscreen(this)" title="全屏查看"><i class="ti ti-maximize"></i></button></div></div>`;
+  return `<div class="img-viewer-wrap"><img class="content-image viewer-img" src="${src}" alt="${alt}" draggable="false" decoding="async" loading="lazy" onload="onImgLoad(this)" /><div class="img-viewer-toolbar"><button class="icon-btn" onclick="zoomInline(this, -0.2)" title="缩小"><i class="ti ti-zoom-out"></i></button><button class="icon-btn" onclick="zoomInline(this, 0.2)" title="放大"><i class="ti ti-zoom-in"></i></button><button class="icon-btn" onclick="openFullscreen(this)" title="全屏查看"><i class="ti ti-maximize"></i></button></div></div>`;
 }
 function cardHTML(d) {
   const dateStr = new Date(d.date).toLocaleDateString('zh-CN');
@@ -1060,12 +1065,12 @@ function cardHTML(d) {
         <button class="icon-btn" title="删除" onclick="deleteItem('${d.id}')"><i class="ti ti-trash"></i></button>
       </div>
     </div>
-    ${d.question ? `<p class="section-label">题目</p><div class="content-box">${d.question}</div>` : ''}
+    ${d.question ? `<p class="section-label">题目</p><div class="content-box">${lazyImgs(d.question)}</div>` : ''}
     ${d.questionImg ? renderImageWithViewer(d.questionImg, '题目图片') : ''}
-    ${d.error ? `<hr class="divider"><p class="section-label">错因分析</p><div class="content-box error-box">${d.error}</div>` : ''}
+    ${d.error ? `<hr class="divider"><p class="section-label">错因分析</p><div class="content-box error-box">${lazyImgs(d.error)}</div>` : ''}
     <hr class="divider">
     <p class="section-label">解题思路</p>
-    <div class="content-box">${d.solution}</div>
+    <div class="content-box">${lazyImgs(d.solution)}</div>
     ${d.solutionImg ? renderImageWithViewer(d.solutionImg, '解析图片') : ''}
     ${d.tags&&d.tags.length ? `<div class="tags">${d.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
     <div class="review-row"><span class="review-info"><i class="ti ti-calendar" style="vertical-align:-2px"></i> ${dateStr}</span>
@@ -1199,7 +1204,8 @@ async function saveItem() {
     const newItem = {...itemData, id: Date.now().toString(36)+Math.random().toString(36).slice(2,6), date: Date.now(), mastery: 0};
     db.push(newItem); await saveToIDB(newItem);
   }
-  closeModal(); renderAll(); afterDataChange();
+  closeModal();
+  setTimeout(() => { renderAll(); afterDataChange(); }, 0);
 }
 // ========================= 知识点标签 Pill 输入 =========================
 let _tagPills = []; // current tags in the modal
