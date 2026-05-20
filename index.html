@@ -2031,8 +2031,61 @@ async function syncFromR2() {
 
   renderAll();
   console.log('[R2] 同步完成');
+  // 同步完成后，预缓存本次数据里所有图片URL
+  _precacheImagesFromDB();
+}
 }
 
+ // ========================= 图片预缓存 =========================
+function _collectImgUrls() {
+  const urls = new Set();
+  const parser = new DOMParser();
+  const workerBase = webdavConfig?.url;
+  if (!workerBase) return urls;
+
+  function extractFromHtml(html) {
+    if (!html) return;
+    const doc = parser.parseFromString(html, 'text/html');
+    doc.querySelectorAll('img').forEach(img => {
+      // 只缓存来自 R2 Worker 的 URL，跳过残留 base64
+      if (img.src && img.src.startsWith(workerBase)) urls.add(img.src);
+    });
+  }
+
+  db.forEach(d => {
+    extractFromHtml(d.question);
+    extractFromHtml(d.error);
+    extractFromHtml(d.solution);
+  });
+  Object.values(notesDb).forEach(n => extractFromHtml(n?.content));
+  return urls;
+}
+
+async function _precacheImagesFromDB() {
+  if (!('caches' in window)) return;
+  const urls = _collectImgUrls();
+  if (!urls.size) return;
+  try {
+    const cache = await caches.open('qb-imgs-v1');
+    // 只请求尚未缓存的
+    const keys = new Set((await cache.keys()).map(r => r.url));
+    const toFetch = [...urls].filter(u => !keys.has(u));
+    if (!toFetch.length) return;
+    await Promise.allSettled(
+      toFetch.map(url =>
+        fetch(url, { headers: { 'X-Auth-Token': webdavConfig.password } })
+          .then(res => { if (res.ok) cache.put(url, res); })
+      )
+    );
+    console.log(`[Cache] 预缓存 ${toFetch.length} 张图片`);
+    // 清理缓存中已不存在于当前数据库的孤立图片
+    for (const key of keys) {
+      if (!urls.has(key)) await cache.delete(key);
+    }
+  } catch (err) {
+    console.warn('[Cache] 预缓存失败', err);
+  }
+}
 // ========================= 饼图（科目题型分布） =========================
 let _pieSelectedSubject = null;
 
@@ -2172,6 +2225,11 @@ async function saveWebDAVConfigAndSync() {
   renderAll();
   // 同步已改为手动触发，启动时不自动同步
 })();
+
+// ========================= Service Worker 注册 =========================
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(err => console.warn('SW注册失败', err));
+}
 </script>
 </body>
 </html>
