@@ -756,8 +756,8 @@
               <div class="notes-editor-title"><i class="ti ti-bookmark"></i> <span id="notes-current-tag">—</span></div>
               <div class="notes-editor-meta" id="notes-editor-meta"></div>
             </div>
-            <div class="notes-editor-actions">
-              <span class="notes-save-indicator" id="notes-save-indicator"><i class="ti ti-check"></i> 已保存</span>
+            <div class="notes-editor-actions" id="notes-editor-actions">
+  <span class="notes-save-indicator" id="notes-save-indicator"><i class="ti ti-check"></i> 已保存</span>
               <button class="icon-btn" id="notes-delete-btn" onclick="deleteCurrentNoteTag()" title="删除此知识点" style="font-size:15px;display:none;color:var(--text-hint);"><i class="ti ti-trash"></i></button>
               <button class="icon-btn" id="notes-rename-btn" onclick="renameCurrentNoteTag()" title="重命名" style="font-size:15px;display:none;"><i class="ti ti-edit"></i></button>
             </div>
@@ -2322,16 +2322,15 @@ function showNoteEditor(tag) {
   const updatedStr = note && note.updatedAt ? '最后编辑：' + new Date(note.updatedAt).toLocaleString('zh-CN') : '尚未记录';
   document.getElementById('notes-editor-meta').textContent = updatedStr;
 
-  // 科目选择器（内联在 header 右侧）
+// 科目选择器（内联在 header 右侧）
   let subjectSel = document.getElementById('notes-tag-subject-sel');
   if (!subjectSel) {
     subjectSel = document.createElement('select');
     subjectSel.id = 'notes-tag-subject-sel';
     subjectSel.style.cssText = 'font-size:12px;padding:4px 8px;border-radius:var(--radius-md);border:1px solid var(--border-light);background:var(--bg-secondary);color:var(--text-secondary);font-family:inherit;outline:none;';
     subjectSel.title = '为该知识点指定所属科目';
-    // 插入到 editor-actions 前面
-    const actions = document.getElementById('notes-editor-header').querySelector('.notes-editor-actions');
-    actions.parentNode.insertBefore(subjectSel, actions);
+    const actions = document.getElementById('notes-editor-actions');
+    if (actions) actions.parentNode.insertBefore(subjectSel, actions);
   }
   // 填充选项
   const subjects = getAllSubjects();
