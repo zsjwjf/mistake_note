@@ -334,17 +334,19 @@
   /* Sync button states */
   .sync-btn { position: relative; transition: color 0.25s, background 0.25s; }
   .sync-btn.sync-idle { color: var(--text-secondary); }
-  .sync-btn.sync-syncing { color: #378ADD; animation: spin 1s linear infinite; }
+  .sync-btn.sync-syncing { color: #378ADD; }
+  .sync-btn.sync-syncing i { animation: spin 1s linear infinite; display: inline-block; }
   .sync-btn.sync-success { color: #3B6D11; }
   .sync-btn.sync-fail { color: #A32D2D; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* Toast notifications */
   #toast-container {
-    position: fixed; bottom: 24px; right: 24px; z-index: 99999;
-    display: flex; flex-direction: column-reverse; gap: 10px;
-    pointer-events: none;
-    max-width: 380px;
+  position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 99999;
+  display: flex; flex-direction: column; gap: 10px;
+  pointer-events: none;
+  max-width: 90%; width: auto; min-width: 280px;
+  align-items: center;
   }
   .toast {
     pointer-events: all;
@@ -356,6 +358,9 @@
     display: flex; align-items: flex-start; gap: 10px;
     animation: toast-in 0.22s cubic-bezier(0.34,1.56,0.64,1) both;
     min-width: 280px;
+    width: auto;
+    min-width: 260px;
+    text-align: center;
   }
   .toast.toast-out { animation: toast-out 0.22s ease forwards; }
   @keyframes toast-in { from { opacity:0; transform: translateY(16px) scale(0.95); } to { opacity:1; transform: translateY(0) scale(1); } }
@@ -680,6 +685,105 @@
   }
   .point-card-flash { animation: point-card-flash 1.5s ease; }
 
+  /* ---- 复习时选项选择器 ---- */
+  .sr-options-section { padding-bottom: 4px; }
+  .sr-options-label { font-size: 12px; color: var(--text-secondary); font-weight: 500; margin-bottom: 8px; }
+  .sr-options-grid { display: flex; flex-direction: column; gap: 8px; }
+  .sr-option-btn {
+    min-width: 64px; padding: 8px 14px; border-radius: var(--radius-md);
+    border: 1px solid var(--border-mid); background: var(--bg-secondary);
+    color: var(--text-primary); font-size: 13px; cursor: pointer;
+    font-family: inherit; display: inline-flex; align-items: center; gap: 6px;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .sr-option-btn:hover:not(:disabled) { background: var(--bg-tertiary); }
+  .sr-option-btn:disabled { opacity: 0.85; }
+  .sr-option-btn.chosen-wrong { background: var(--danger-bg); color: var(--danger-text); border-color: #F7C1C1; }
+  .sr-option-btn.chosen-correct { background: var(--success-bg); color: var(--success-text); border-color: #C0DD97; }
+  .sr-option-btn.is-answer { background: var(--success-bg); color: var(--success-text); border-color: #C0DD97; }
+
+/* ---- 选项模块 ---- */
+.options-module { margin-top: 6px; }
+.options-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.options-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.option-row { display: flex; align-items: center; gap: 6px; }
+.option-key {
+  width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border-mid);
+  background: var(--bg-secondary); font-size: 13px; font-weight: 600;
+  color: var(--text-primary); display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; cursor: default;
+}
+.option-key.selected-wrong { background: var(--danger-bg); color: var(--danger-text); border-color: #F7C1C1; }
+.option-key.selected-correct { background: var(--success-bg); color: var(--success-text); border-color: #C0DD97; }
+.option-content-input {
+  flex: 1; font-size: 13px; padding: 5px 9px;
+  border-radius: var(--radius-md); border: 1px solid var(--border-light);
+  background: var(--bg-primary); color: var(--text-primary); font-family: inherit; outline: none;
+}
+.option-content-input:focus { border-color: var(--border-mid); }
+.option-mark-btn {
+  font-size: 11px; padding: 4px 9px; border-radius: 10px; border: 1px solid var(--border-mid);
+  background: none; color: var(--text-secondary); cursor: pointer; font-family: inherit;
+  white-space: nowrap; transition: background 0.12s;
+}
+.option-mark-btn:hover { background: var(--bg-secondary); }
+.option-mark-btn.is-wrong { background: var(--danger-bg); color: var(--danger-text); border-color: #F7C1C1; }
+.option-mark-btn.is-correct { background: var(--success-bg); color: var(--success-text); border-color: #C0DD97; }
+.option-del-btn {
+  width: 26px; height: 26px; border-radius: 50%; border: none; background: none;
+  cursor: pointer; color: var(--text-hint); font-size: 16px; line-height: 1;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  transition: color 0.12s, background 0.12s;
+}
+.option-del-btn:hover { color: var(--danger-text); background: var(--danger-bg); }
+.options-add-btn {
+  font-size: 12px; color: var(--text-secondary); cursor: pointer; padding: 5px 0;
+  display: inline-flex; align-items: center; gap: 4px; border: none; background: none;
+  font-family: inherit; transition: color 0.12s;
+}
+.options-add-btn:hover { color: var(--text-primary); }
+
+/* 复习时选项选择器 */
+.sr-options-section { margin-bottom: 14px; }
+.sr-options-label { font-size: 12px; color: var(--text-secondary); font-weight: 500; margin-bottom: 8px; }
+.sr-options-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.sr-option-btn {
+  width: 100%;                /* 撑满父容器宽度 */
+  justify-content: flex-start; /* 内容左对齐（而不是居中对齐） */
+  text-align: left;
+  white-space: normal;        /* 允许文本换行 */
+  word-break: break-word;     /* 长单词换行 */
+  padding: 10px 14px;
+  /* 保留原有其他样式 */
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-mid);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.12s, border-color 0.12s;
+}
+.sr-option-btn span:first-child {
+  flex-shrink: 0;   /* 避免字母键被压缩 */
+  font-weight: 600;
+}
+.sr-option-btn span:last-child {
+  flex: 1;
+  text-align: left;
+  white-space: normal;
+  word-break: break-word;
+}
+.sr-option-btn:hover { background: var(--bg-tertiary); }
+.sr-option-btn.chosen-wrong { background: var(--danger-bg); color: var(--danger-text); border-color: #F7C1C1; }
+.sr-option-btn.chosen-correct { background: var(--success-bg); color: var(--success-text); border-color: #C0DD97; }
+.sr-option-btn.is-answer { background: var(--success-bg); color: var(--success-text); border-color: #C0DD97; }
+.sr-options-revealed { margin-top: 10px; font-size: 12px; color: var(--text-secondary); }
+#sync-icon { display: inline-block; }
+
 </style>
 </head>
 <body>
@@ -687,10 +791,10 @@
   <div class="top-bar">
     <h1><i class="ti ti-notebook"></i> 错题本</h1>
     <div class="top-bar-actions">
-      <button class="btn" onclick="openWebDAVSetup()"><i class="ti ti-cloud-upload"></i> 网盘同步</button>
-      <button class="btn sync-btn sync-idle" id="sync-btn" onclick="manualSync()" title="手动同步到云端"><i class="ti ti-refresh" id="sync-icon"></i></button>
+      <button class="btn" onclick="openWebDAVSetup()"><i class="ti ti-cloud-upload"></i> 同步设置</button>
+      <button class="btn sync-btn sync-idle" id="sync-btn" onclick="manualSync()" title="手动同步到云端"><i class="ti ti-refresh" id="sync-icon"></i><span>同步</span></button>
       <button class="btn" onclick="openManageModal()"><i class="ti ti-settings"></i> 管理科目</button>
-      <button class="btn" onclick="exportBackup()"><i class="ti ti-download"></i> 导出备份</button>
+      <button class="btn" onclick="exportBackup()"><i class="ti ti-download"></i> 导出</button>
       <button class="btn" onclick="document.getElementById('import-input').click()"><i class="ti ti-upload"></i> 导入</button>
       <input type="file" id="import-input" style="display:none" onchange="importBackup(this)" accept=".json">
       <button class="btn btn-primary" onclick="openModal()"><i class="ti ti-plus"></i> 添加错题</button>
@@ -720,7 +824,12 @@
   <div id="page-review" class="page">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px;">
       <p style="font-size:13px;color:var(--text-secondary);">按间隔复习算法排期，点击卡片查看详情，或点击右侧按钮逐题复习。</p>
-      <button class="btn btn-primary" id="sr-start-quiz-btn" onclick="srStartQuiz()"><i class="ti ti-play"></i> 开始复习</button>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <select id="sr-subject-filter" onchange="renderReview()" style="font-size:13px;padding:8px 11px;border-radius:var(--radius-md);border:1px solid var(--border-mid);background:var(--bg-primary);color:var(--text-primary);font-family:inherit;">
+          <option value="">全部科目</option>
+        </select>
+        <button class="btn btn-primary" id="sr-start-quiz-btn" onclick="srStartQuiz()"><i class="ti ti-play"></i> 开始复习</button>
+      </div>
     </div>
     <div id="review-list"></div>
   </div>
@@ -845,6 +954,18 @@
         <input class="tag-text-input" id="f-tags-input" placeholder="输入后按 Enter 或逗号添加…" autocomplete="off" />
       </div>
       <div class="tag-suggestions" id="tag-suggestions"></div>
+    </div>
+    <div class="form-row" id="options-form-row">
+      <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>选项（可选）</span>
+        <label style="font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:5px;cursor:pointer;font-weight:400;">
+          <input type="checkbox" id="options-enabled" onchange="toggleOptionsModule()" style="accent-color:var(--accent)"> 启用选项
+        </label>
+      </label>
+      <div id="options-module" class="options-module" style="display:none;">
+        <div class="options-list" id="options-list"></div>
+        <button type="button" class="options-add-btn" onclick="addOption()"><i class="ti ti-plus"></i> 添加选项</button>
+      </div>
     </div>
     <div class="form-row">
       <label class="form-label">来源（可选）</label>
@@ -1076,6 +1197,9 @@ function srOpenSheet(item) {
     bodyHtml += '<div class="sr-sheet-section"><div class="sr-sheet-label">题目</div>'
       + '<div class="sr-sheet-body">' + item.question + '</div></div>';
   }
+  if (item.options && item.options.length > 0 && item.srStatus !== 'mastered') {
+    bodyHtml += _buildSrOptionsPicker(item.options, item.id, 'sheet');
+  }
   if (item.error) {
     bodyHtml += '<div class="sr-sheet-section">'
       + '<button class="sr-toggle-btn" data-target="sr-error-box"><i class="ti ti-chevron-right"></i>错因分析</button>'
@@ -1119,17 +1243,22 @@ function srOpenSheet(item) {
     + '<span>已复习 <strong>' + (item.srCount || 0) + '</strong> 次</span>'
     + '<span>收录：<strong>' + srFormatDate(new Date(item.date).toISOString().slice(0,10)) + '</strong></span>';
 
-  // Footer: feedback buttons
+  // Footer: options picker + feedback buttons
   let footerHtml = '';
   if (item.srStatus !== 'mastered') {
-    footerHtml += '<div class="sr-feedback-label">本次复习结果</div>'
-      + '<div class="sr-feedback-row">'
+    const hasOpts = item.options && item.options.length > 0;
+    footerHtml += '<div class="sr-feedback-label" id="sr-sheet-fb-label" style="margin-top:12px' + (hasOpts ? ';display:none' : '') + '">本次复习结果</div>'
+      + '<div class="sr-feedback-row" id="sr-sheet-fb-row"' + (hasOpts ? ' style="display:none"' : '') + '>'
       + '<button class="sr-fb-btn wrong" data-sr-result="wrong" data-sr-id="' + item.id + '">❌ 还是错</button>'
       + '<button class="sr-fb-btn shaky" data-sr-result="shaky" data-sr-id="' + item.id + '">😅 磕磕绊绊</button>'
       + '<button class="sr-fb-btn solid" data-sr-result="solid" data-sr-id="' + item.id + '">✅ 秒杀</button>'
       + '</div>';
   }
   document.getElementById('sr-sheet-footer').innerHTML = footerHtml;
+
+  if (item.options && item.options.length > 0 && item.srStatus !== 'mastered') {
+    _bindSrOptionsPicker('sheet', item);
+  }
 
   document.getElementById('sr-sheet-footer').querySelectorAll('[data-sr-result]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1187,17 +1316,16 @@ let _srQuizDone  = 0;    // 本次已完成题目数
 
 function srStartQuiz() {
   const today = srTodayStr();
-  const allSubjs = getAllSubjects();
+  const filterSubject = document.getElementById('sr-subject-filter')?.value || '';
   const queue = db
-    .filter(d => d.srStatus !== 'mastered')
+    .filter(d => d.srStatus !== 'mastered' && (!filterSubject || d.subject === filterSubject))
     .map(srEnsureInit)
     .sort((a, b) => {
+      // 先按到期与否分组，组内随机打乱
       const aDue = (a.srNextReview && a.srNextReview <= today) ? 0 : 1;
       const bDue = (b.srNextReview && b.srNextReview <= today) ? 0 : 1;
       if (aDue !== bDue) return aDue - bDue;
-      const ra = allSubjs.indexOf(a.subject), rb = allSubjs.indexOf(b.subject);
-      if (ra !== rb) return (ra === -1 ? 99 : ra) - (rb === -1 ? 99 : rb);
-      return b.date - a.date;
+      return Math.random() - 0.5;
     });
 
   if (!queue.length) {
@@ -1253,6 +1381,11 @@ function srQuizRender() {
     </div>`;
   }
 
+  // 选项选择器（内联在题目下方）
+  if (item.options && item.options.length > 0) {
+    cardHtml += _buildSrOptionsPicker(item.options, item.id, 'quiz');
+  }
+
   // 错因（折叠）
   if (item.error) {
     cardHtml += `<div class="sr-quiz-section">
@@ -1289,7 +1422,7 @@ function srQuizRender() {
 
   document.getElementById('sr-quiz-card').innerHTML = cardHtml;
 
-  // 绑定折叠按钮
+// 绑定折叠按钮
   document.getElementById('sr-quiz-card').querySelectorAll('.sr-toggle-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const box = document.getElementById(btn.dataset.target);
@@ -1298,6 +1431,15 @@ function srQuizRender() {
       btn.classList.toggle('open', !collapsed);
     });
   });
+
+  // 绑定选项选择器（已内联在卡片 HTML 中）
+  const quizFooter = document.querySelector('.sr-quiz-footer');
+  if (quizFooter) {
+    quizFooter.style.display = item.options && item.options.length > 0 ? 'none' : '';
+  }
+  if (item.options && item.options.length > 0) {
+    _bindSrOptionsPicker('quiz', item);
+  }
 }
 
 async function srQuizFeedback(result) {
@@ -1334,6 +1476,77 @@ async function srQuizFeedback(result) {
   srQuizRender();
 }
 
+
+// ========================= 复习时选项选择器 =========================
+function _buildSrOptionsPicker(options, itemId, mode) {
+  const btns = options.map((opt, i) =>
+    `<button type="button" class="sr-option-btn" data-opt-idx="${i}" data-opt-key="${esc(opt.key)}">
+      <span style="font-weight:600">${esc(opt.key)}</span>
+      ${opt.content ? `<span style="font-size:12px;color:var(--text-secondary);margin-left:4px">${esc(opt.content)}</span>` : ''}
+    </button>`
+  ).join('');
+  return `<div class="sr-options-section" id="sr-opts-${mode}">
+    <div class="sr-options-label" style="padding-top:10px">选择你的答案：</div>
+    <div class="sr-options-grid">${btns}</div>
+    <div class="sr-options-revealed" id="sr-opts-revealed-${mode}" style="display:none;margin-top:8px;font-size:13px;"></div>
+  </div>`;
+}
+
+function _bindSrOptionsPicker(mode, item) {
+  const container = document.getElementById('sr-opts-' + mode);
+  if (!container) return;
+  const options = item.options;
+  const correctKeys = options.filter(o => o.isCorrect).map(o => o.key);
+
+  container.querySelectorAll('.sr-option-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const chosenKey = btn.dataset.optKey;
+      const isCorrect = correctKeys.length > 0 && correctKeys.includes(chosenKey);
+
+      // 标记所有选项
+      container.querySelectorAll('.sr-option-btn').forEach(b => {
+        b.classList.remove('chosen-wrong', 'chosen-correct', 'is-answer');
+        b.disabled = true;
+        b.style.cursor = 'default';
+        if (correctKeys.includes(b.dataset.optKey)) b.classList.add('is-answer');
+      });
+      // 覆盖用户选的那个
+      btn.classList.remove('is-answer');
+      btn.classList.add(isCorrect ? 'chosen-correct' : 'chosen-wrong');
+
+      // 显示结果文字
+      const revealed = document.getElementById('sr-opts-revealed-' + mode);
+      if (revealed) {
+        revealed.style.display = '';
+        if (isCorrect) {
+          revealed.innerHTML = '<span style="color:var(--success-text)">✅ 回答正确！请根据作答流畅度选择掌握度。</span>';
+        } else {
+          const correctLabel = correctKeys.length ? correctKeys.join('、') : '（未设置正确答案）';
+          revealed.innerHTML = `<span style="color:var(--danger-text)">❌ 选错了，正确答案是 <strong>${esc(correctLabel)}</strong>，将自动标记为「未掌握」。</span>`;
+        }
+      }
+
+      if (mode === 'sheet') {
+        const fbLabel = document.getElementById('sr-sheet-fb-label');
+        const fbRow = document.getElementById('sr-sheet-fb-row');
+        if (!isCorrect) {
+          setTimeout(() => { srHandleFeedback(item.id, 'wrong'); srCloseSheet(); }, 1000);
+        } else {
+          if (fbLabel) fbLabel.style.display = '';
+          if (fbRow) fbRow.style.display = '';
+        }
+      } else if (mode === 'quiz') {
+        const footer = document.querySelector('.sr-quiz-footer');
+        if (!isCorrect) {
+          setTimeout(() => srQuizFeedback('wrong'), 1000);
+        } else {
+          if (footer) footer.style.display = '';
+        }
+      }
+    });
+  });
+}
+
 // 初始化新错题的 srNextReview（如果还没有的话）
 function srEnsureInit(item) {
   if (item.srNextReview || item.srStatus === 'mastered') return item;
@@ -1368,6 +1581,88 @@ const STORE_NAME = 'mistakes';
 const NOTES_STORE = 'tagNotes';
 let idb = null;
 let editId = null;
+
+// ========================= 选项模块 =========================
+let _options = []; // [{ key: 'A', content: '', isWrong: false, isCorrect: false }]
+
+function toggleOptionsModule() {
+  const enabled = document.getElementById('options-enabled').checked;
+  document.getElementById('options-module').style.display = enabled ? '' : 'none';
+  if (enabled && _options.length === 0) {
+    _options = [
+      { key: 'A', content: '', isWrong: false, isCorrect: false },
+      { key: 'B', content: '', isWrong: false, isCorrect: false },
+      { key: 'C', content: '', isWrong: false, isCorrect: false },
+      { key: 'D', content: '', isWrong: false, isCorrect: false },
+    ];
+    renderOptions();
+  }
+}
+
+function renderOptions() {
+  const list = document.getElementById('options-list');
+  list.innerHTML = _options.map((opt, i) => `
+    <div class="option-row" data-opt-idx="${i}">
+      <div class="option-key${opt.isWrong ? ' selected-wrong' : opt.isCorrect ? ' selected-correct' : ''}">${esc(opt.key)}</div>
+      <input class="option-content-input" type="text" placeholder="选项内容（可留空）" value="${esc(opt.content)}"
+        oninput="_options[${i}].content = this.value" />
+      <button type="button" class="option-mark-btn${opt.isWrong ? ' is-wrong' : ''}"
+        onclick="toggleOptionWrong(${i})">我选了</button>
+      <button type="button" class="option-mark-btn${opt.isCorrect ? ' is-correct' : ''}"
+        onclick="toggleOptionCorrect(${i})">正确答案</button>
+      <button type="button" class="option-del-btn" onclick="removeOption(${i})" title="删除">&times;</button>
+    </div>
+  `).join('');
+}
+
+function toggleOptionWrong(idx) {
+  _options[idx].isWrong = !_options[idx].isWrong;
+  renderOptions();
+}
+
+function toggleOptionCorrect(idx) {
+  // 正确答案可多选（多选题）
+  _options[idx].isCorrect = !_options[idx].isCorrect;
+  renderOptions();
+}
+
+function addOption() {
+  // 自动生成下一个字母键
+  const usedKeys = _options.map(o => o.key);
+  const alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let nextKey = '';
+  for (const c of alpha) { if (!usedKeys.includes(c)) { nextKey = c; break; } }
+  if (!nextKey) nextKey = String(_options.length + 1);
+  _options.push({ key: nextKey, content: '', isWrong: false, isCorrect: false });
+  renderOptions();
+}
+
+function removeOption(idx) {
+  _options.splice(idx, 1);
+  renderOptions();
+}
+
+function getOptionsData() {
+  if (!document.getElementById('options-enabled')?.checked) return null;
+  if (_options.length === 0) return null;
+  return _options.map(o => ({ ...o }));
+}
+
+function setOptionsData(options) {
+  const checkbox = document.getElementById('options-enabled');
+  const module = document.getElementById('options-module');
+  if (!options || options.length === 0) {
+    _options = [];
+    if (checkbox) checkbox.checked = false;
+    if (module) module.style.display = 'none';
+    return;
+  }
+  _options = options.map(o => ({ ...o }));
+  if (checkbox) checkbox.checked = true;
+  if (module) module.style.display = '';
+  renderOptions();
+}
+
  // ========================= R2 图片上传 =========================
 async function uploadImageToR2(base64DataUrl) {
   const headers = getR2Headers();
@@ -1537,7 +1832,7 @@ function renderManage() {
   if (!subjects.length) { container.innerHTML = '<p style="font-size:13px;color:var(--text-secondary);text-align:center;padding:2rem 0;">暂无科目配置，请点击下方"添加科目"</p>'; return; }
   container.innerHTML = subjects.map(subj => {
     const types = subjectTypeConfig[subj] || [];
-    const typesHtml = types.length ? types.map(t => `<span class="manage-type-tag">${esc(t)}<button class="manage-type-del" data-action="del-type" data-subj="${esc(subj)}" data-type="${esc(t)}">&times;</button></span>`).join('') : '<span style="font-size:12px;color:var(--text-hint);">暂无题型</span>';
+    const typesHtml = types.length ? types.map(t => `<span class="manage-type-tag" data-subj="${esc(subj)}" data-type="${esc(t)}"><span class="manage-type-name">${esc(t)}</span><button class="manage-type-del" data-action="del-type" data-subj="${esc(subj)}" data-type="${esc(t)}">&times;</button></span>`).join('') : '<span style="font-size:12px;color:var(--text-hint);">暂无题型</span>';
     return `<div class="manage-subject-block"><div class="manage-subject-header"><span class="manage-subject-name"><i class="ti ti-books"></i> ${esc(subj)}</span><div class="manage-subject-actions"><button class="icon-btn" data-action="edit-subj" data-subj="${esc(subj)}" title="重命名"><i class="ti ti-edit"></i></button><button class="icon-btn" data-action="del-subj" data-subj="${esc(subj)}" title="删除科目"><i class="ti ti-trash"></i></button></div></div><div class="manage-types">${typesHtml}<span class="manage-add-type" data-action="add-type" data-subj="${esc(subj)}">+ 添加题型</span></div></div>`;
   }).join('');
 }
@@ -1557,6 +1852,35 @@ document.getElementById('manage-content').addEventListener('click', async functi
     if (!ok) return;
     delete subjectTypeConfig[subj]; saveConfig(); renderManage(); updateFilters();
   }
+});
+document.getElementById('manage-content').addEventListener('dblclick', async function(e) {
+  // 获取被双击的题型标签容器
+  const typeTag = e.target.closest('.manage-type-tag');
+  if (!typeTag) return;
+  // 如果双击的是删除按钮或其内部，不处理
+  if (e.target.closest('.manage-type-del')) return;
+
+  const subject = typeTag.dataset.subj;
+  const oldType = typeTag.dataset.type;
+  if (!subject || !oldType) return;
+
+  // 弹出修改对话框
+  const newType = await uiPrompt(`请输入新的题型名称：`, {
+    title: '修改题型',
+    icon: 'ti-edit',
+    defaultVal: oldType
+  });
+  if (!newType || newType.trim() === oldType) return;
+
+  const trimmed = newType.trim();
+  // 检查同科目下是否已存在该题型
+  if (subjectTypeConfig[subject] && subjectTypeConfig[subject].includes(trimmed)) {
+    await uiAlert(`题型“${trimmed}”在科目“${subject}”中已存在`, { title: '重复题型', iconClass: 'warn' });
+    return;
+  }
+
+  // 执行更新
+  await updateTypeName(subject, oldType, trimmed);
 });
 async function promptAddSubject() {
   const name = await uiPrompt('请输入新科目名称：', { title: '添加科目', icon: 'ti-books' });
@@ -1643,10 +1967,18 @@ function renderReview() {
   const el = document.getElementById('review-list');
   if (!el) return;
   const today = srTodayStr();
+  // 更新科目筛选下拉
+  const srSubjectSel = document.getElementById('sr-subject-filter');
+  if (srSubjectSel) {
+    const curVal = srSubjectSel.value;
+    srSubjectSel.innerHTML = '<option value="">全部科目</option>' +
+      getAllSubjects().map(s => `<option value="${esc(s)}"${s === curVal ? ' selected' : ''}>${esc(s)}</option>`).join('');
+  }
 
   // 确保所有错题都有 sr 字段
+  const srFilterSubject = document.getElementById('sr-subject-filter')?.value || '';
   let items = db
-    .filter(d => d.srStatus !== 'mastered')
+    .filter(d => d.srStatus !== 'mastered' && (!srFilterSubject || d.subject === srFilterSubject))
     .map(srEnsureInit)
     .sort((a, b) => {
       // 第一层：到期优先
@@ -1714,6 +2046,39 @@ function renderStats() {
   barChart(document.getElementById('chart-type'), byType);
   renderPieChart();
 }
+async function updateTypeName(subject, oldType, newType) {
+  // 1. 更新 subjectTypeConfig
+  const types = subjectTypeConfig[subject];
+  if (!types) return;
+  const idx = types.indexOf(oldType);
+  if (idx !== -1) types[idx] = newType;
+  await saveConfig();
+
+  // 2. 更新所有错题中的题型
+  let changed = false;
+  for (const item of db) {
+    if (item.subject === subject && item.type === oldType) {
+      item.type = newType;
+      await saveToIDB(item);
+      changed = true;
+    }
+  }
+  if (changed) {
+    db = await getAllFromIDB(); // 重新加载 db 确保内存数据最新
+  }
+
+  // 3. 刷新管理界面
+  renderManage();
+
+  // 4. 更新所有相关的下拉框（筛选、表单等）
+  updateFilters();
+  if (document.getElementById('f-subject').value === subject) {
+    populateTypeSelect(newType);
+  }
+
+  // 5. 刷新错题列表和待复习列表
+  renderAll();
+}
 async function setMastery(id, val) {
   const item = db.find(d=>d.id===id);
   if (item) { item.mastery = val; await saveToIDB(item); renderAll(); afterDataChange(); }
@@ -1748,6 +2113,7 @@ function openModal() {
   document.getElementById('f-source').value = '';
   populateSubjectSelect(null);
   populateTypeSelect(null);
+  setOptionsData(null);
   document.getElementById('modal-overlay').classList.add('open');
 }
 function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
@@ -1768,6 +2134,7 @@ function editItem(id) {
   document.getElementById('f-source').value = item.source||'';
   populateSubjectSelect(item.subject);
   populateTypeSelect(item.type);
+  setOptionsData(item.options || null);
   document.getElementById('modal-overlay').classList.add('open');
 }
 async function saveItem() {
@@ -1789,6 +2156,7 @@ async function saveItem() {
     solution: solutionHtml.trim(),
     tags: getTagPills(),
     source: document.getElementById('f-source').value.trim(),
+    options: getOptionsData(),
   };
   if (editId) {
     const idx = db.findIndex(d=>d.id===editId);
@@ -2597,7 +2965,7 @@ async function manualSync() {
   if (_syncState === 'syncing') return;
   const headers = getR2Headers();
   if (!headers) {
-    await uiAlert('请先配置 Worker 地址和 Token（点击"网盘同步"按钮）', { title: '未配置云端同步', iconClass: 'warn', icon: 'ti-alert-circle' });
+    await uiAlert('请先配置 Worker 地址和 Token（点击"同步设置"按钮）', { title: '未配置云端同步', iconClass: 'warn', icon: 'ti-alert-circle' });
     return;
   }
   setSyncState('syncing');
