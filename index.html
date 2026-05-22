@@ -933,6 +933,18 @@
         <div class="form-input rich-editor" id="f-question" contenteditable="true" placeholder="在此直接输入文字，或使用 Ctrl+V 粘贴截图..."></div>
       </div>
     </div>
+    <div class="form-row" id="options-form-row">
+      <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>选项（可选）</span>
+        <label style="font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:5px;cursor:pointer;font-weight:400;">
+          <input type="checkbox" id="options-enabled" onchange="toggleOptionsModule()" style="accent-color:var(--accent)"> 启用选项
+        </label>
+      </label>
+      <div id="options-module" class="options-module" style="display:none;">
+        <div class="options-list" id="options-list"></div>
+        <button type="button" class="options-add-btn" onclick="addOption()"><i class="ti ti-plus"></i> 添加选项</button>
+      </div>
+    </div>
     <div class="form-row">
       <label class="form-label">我的错因 / 错误分析</label>
       <div class="editor-wrap" id="wrap-f-error">
@@ -955,18 +967,7 @@
       </div>
       <div class="tag-suggestions" id="tag-suggestions"></div>
     </div>
-    <div class="form-row" id="options-form-row">
-      <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
-        <span>选项（可选）</span>
-        <label style="font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:5px;cursor:pointer;font-weight:400;">
-          <input type="checkbox" id="options-enabled" onchange="toggleOptionsModule()" style="accent-color:var(--accent)"> 启用选项
-        </label>
-      </label>
-      <div id="options-module" class="options-module" style="display:none;">
-        <div class="options-list" id="options-list"></div>
-        <button type="button" class="options-add-btn" onclick="addOption()"><i class="ti ti-plus"></i> 添加选项</button>
-      </div>
-    </div>
+    
     <div class="form-row">
       <label class="form-label">来源（可选）</label>
       <input class="form-input" id="f-source" placeholder="2024国考真题 / 粉笔模考第3季…" />
