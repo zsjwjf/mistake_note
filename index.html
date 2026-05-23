@@ -408,14 +408,14 @@
   /* ---- Rich text toolbar ---- */
   .editor-wrap { position: relative; }
   .rte-toolbar {
-    display: none; align-items: center; gap: 2px;
+    display: flex; align-items: center; gap: 2px;
     padding: 4px 6px; background: var(--bg-primary);
     border: 1px solid var(--border-mid); border-bottom: none;
     border-radius: var(--radius-md) var(--radius-md) 0 0;
     flex-wrap: wrap;
   }
-  .editor-wrap.focused .rte-toolbar { display: flex; }
-  .editor-wrap.focused .rich-editor { border-radius: 0 0 var(--radius-md) var(--radius-md); }
+  .editor-wrap .rte-toolbar { display: flex; }
+  .editor-wrap .rich-editor { border-radius: 0 0 var(--radius-md) var(--radius-md); }
   .rte-btn {
     width: 28px; height: 26px; display: flex; align-items: center; justify-content: center;
     border: none; background: none; cursor: pointer; border-radius: 5px;
@@ -718,7 +718,8 @@
   width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border-mid);
   background: var(--bg-secondary); font-size: 13px; font-weight: 600;
   color: var(--text-primary); display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; cursor: default;
+  flex-shrink: 0; cursor: default; line-height: 1; padding: 0;
+  font-variant-numeric: tabular-nums;
 }
 .option-key.selected-wrong { background: var(--danger-bg); color: var(--danger-text); border-color: #F7C1C1; }
 .option-key.selected-correct { background: var(--success-bg); color: var(--success-text); border-color: #C0DD97; }
@@ -1805,7 +1806,7 @@ function populateSubjectSelect(selectedVal) {
 }
 function populateTypeSelect(selectedVal) {
   const subject = document.getElementById('f-subject').value;
-  const typeSel = document.getElementById('f-type'); typeSel.innerHTML = '';
+  const typeSel = document.getElementById('f-type'); typeSel.innerHTML = '<option value="">-- 请选择题型 --</option>';
   const types = getTypesForSubject(subject);
   let found = false;
   types.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; if (t === selectedVal) { o.selected = true; found = true; } typeSel.appendChild(o); });
@@ -2121,7 +2122,12 @@ function openModal() {
   document.getElementById('f-source').value = '';
   populateSubjectSelect(null);
   populateTypeSelect(null);
-  setOptionsData(null);
+  setOptionsData([
+    { key: 'A', content: '', isWrong: false, isCorrect: false },
+    { key: 'B', content: '', isWrong: false, isCorrect: false },
+    { key: 'C', content: '', isWrong: false, isCorrect: false },
+    { key: 'D', content: '', isWrong: false, isCorrect: false },
+  ]);
   document.getElementById('modal-overlay').classList.add('open');
 }
 function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
