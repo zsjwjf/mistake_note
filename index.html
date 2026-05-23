@@ -6,6 +6,9 @@
 <title>错题本</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='32' height='32' rx='7' fill='%231a56db'/%3E%3Crect x='7' y='5' width='14' height='18' rx='2' fill='white' opacity='.95'/%3E%3Crect x='7' y='5' width='4' height='18' rx='2' fill='%2393c5fd' opacity='.7'/%3E%3Cline x1='12' y1='10' x2='19' y2='10' stroke='%231a56db' stroke-width='1.2' stroke-linecap='round'/%3E%3Cline x1='12' y1='13' x2='19' y2='13' stroke='%231a56db' stroke-width='1.2' stroke-linecap='round'/%3E%3Cline x1='12' y1='16' x2='16' y2='16' stroke='%231a56db' stroke-width='1.2' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='22' r='7' fill='%23ef4444'/%3E%3Cpath d='M19 22l2 2 4-4' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" />
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -792,6 +795,33 @@
 .sr-options-revealed { margin-top: 10px; font-size: 12px; color: var(--text-secondary); }
 #sync-icon { display: inline-block; }
 
+/* ---- 相关题目 ---- */
+.related-items { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+.related-item-link {
+  font-size:11px; padding:3px 9px; background:var(--purple-bg);
+  color:var(--purple-text); border-radius:10px; border:1px solid rgba(60,52,137,0.18);
+  cursor:pointer; transition:background 0.12s;
+}
+.related-item-link:hover { background:rgba(60,52,137,0.18); }
+.related-search-dropdown {
+  position:absolute; left:0; right:0; top:100%; z-index:300;
+  background:var(--bg-primary); border:1px solid var(--border-mid);
+  border-radius:var(--radius-md); box-shadow:0 6px 20px rgba(0,0,0,0.12);
+  max-height:220px; overflow-y:auto; margin-top:3px; display:none;
+}
+.related-search-dropdown.open { display:block; }
+.related-search-item {
+  padding:8px 14px; font-size:12px; cursor:pointer;
+  color:var(--text-primary); border-bottom:1px solid var(--border-light);
+  transition:background 0.1s; display:flex; gap:8px; align-items:center;
+}
+.related-search-item:last-child { border-bottom:none; }
+.related-search-item:hover { background:var(--bg-secondary); }
+.related-search-item .rs-meta { font-size:11px; color:var(--text-hint); white-space:nowrap; }
+
+/* ---- 星标 ---- */
+.star-btn.starred { color: #FFC125; }
+
 </style>
 </head>
 <body>
@@ -825,11 +855,16 @@
         <option value="">所有掌握度</option>
         <option value="0">未掌握</option><option value="1">模糊</option><option value="2">已掌握</option>
       </select>
+      <label style="font-size:13px;color:var(--text-secondary);display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;">
+        <input type="checkbox" id="filter-starred" onchange="renderList()" style="accent-color:var(--accent)">
+        仅看星标
+      </label>
     </div>
     <div class="cards" id="card-list"></div>
   </div>
 
   <div id="page-review" class="page">
+    <div id="sr-today-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1rem;"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px;">
       <p style="font-size:13px;color:var(--text-secondary);">按间隔复习算法排期，点击卡片查看详情，或点击右侧按钮逐题复习。</p>
       <div style="display: flex; gap: 8px; align-items: center;">
@@ -875,6 +910,13 @@
             </div>
             <div class="notes-editor-actions" id="notes-editor-actions">
   <span class="notes-save-indicator" id="notes-save-indicator"><i class="ti ti-check"></i> 已保存</span>
+              <div style="position:relative;display:inline-block" id="notes-export-wrap">
+                <button class="icon-btn" id="notes-export-btn" onclick="toggleNotesExportMenu()" title="导出笔记" style="font-size:15px;display:none;"><i class="ti ti-download"></i></button>
+                <div id="notes-export-menu" style="display:none;position:absolute;right:0;top:110%;background:var(--bg-primary);border:1px solid var(--border-mid);border-radius:var(--radius-md);box-shadow:0 4px 16px rgba(0,0,0,0.12);min-width:130px;z-index:500;">
+                  <div onclick="exportNoteAsMarkdown()" style="padding:9px 14px;font-size:13px;cursor:pointer;color:var(--text-primary);transition:background 0.1s;" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background=''"><i class="ti ti-brand-markdown" style="margin-right:6px"></i>导出 Markdown</div>
+                  <div onclick="exportNoteAsPDF()" style="padding:9px 14px;font-size:13px;cursor:pointer;color:var(--text-primary);transition:background 0.1s;" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background=''"><i class="ti ti-file-type-pdf" style="margin-right:6px"></i>导出 PDF</div>
+                </div>
+              </div>
               <button class="icon-btn" id="notes-delete-btn" onclick="deleteCurrentNoteTag()" title="删除此知识点" style="font-size:15px;display:none;color:var(--text-hint);"><i class="ti ti-trash"></i></button>
               <button class="icon-btn" id="notes-rename-btn" onclick="renameCurrentNoteTag()" title="重命名" style="font-size:15px;display:none;"><i class="ti ti-edit"></i></button>
             </div>
@@ -980,6 +1022,12 @@
       <label class="form-label">来源（可选）</label>
       <input class="form-input" id="f-source" placeholder="2024国考真题 / 粉笔模考第3季…" />
     </div>
+    <!-- <div class="form-row" style="position:relative">
+      <label class="form-label">关联题目（按科目/题型/关键词搜索）</label>
+      <input class="form-input" id="f-related-search" placeholder="输入关键词搜索已有错题…" autocomplete="off" oninput="searchRelatedItems(this.value)" onfocus="searchRelatedItems(this.value)" />
+      <div class="related-search-dropdown" id="related-search-dropdown"></div>
+      <div class="related-items" id="f-related-pills" style="margin-top:6px;"></div>
+    </div> -->
     <div class="modal-footer">
       <button class="btn" onclick="closeModal()">取消</button>
       <button class="btn btn-primary" onclick="saveItem()"><i class="ti ti-check"></i> 保存</button>
@@ -1130,6 +1178,29 @@ const SR_INTERVALS = {
   2: [7, 21],               // 已掌握（兜底，一般不走到这里）
 };
 const SR_SUBJECT_ORDER = []; // 按科目排序，空则按字母
+let srSubjectIntervals = {}; // { [subject]: [d1,d2,...] }
+
+function srGetIntervals(subject, mastery) {
+  if (subject && srSubjectIntervals[subject]) return srSubjectIntervals[subject];
+  return SR_INTERVALS[mastery] || SR_INTERVALS[1];
+}
+
+async function saveSrSubjectIntervals() {
+  localStorage.setItem('qb_sr_subject_intervals', JSON.stringify(srSubjectIntervals));
+  if (!idb) return;
+  const tx = idb.transaction('settings', 'readwrite');
+  tx.objectStore('settings').put(srSubjectIntervals, 'srIntervals');
+  return new Promise(r => { tx.oncomplete = r; });
+}
+
+async function loadSrSubjectIntervals() {
+  if (idb) {
+    const tx = idb.transaction('settings', 'readonly');
+    const result = await new Promise(r => { const req = tx.objectStore('settings').get('srIntervals'); req.onsuccess = () => r(req.result); });
+    if (result) { srSubjectIntervals = result; return; }
+  }
+  try { srSubjectIntervals = JSON.parse(localStorage.getItem('qb_sr_subject_intervals') || '{}'); } catch { srSubjectIntervals = {}; }
+}
 
 function srTodayStr() {
   const bj = new Date(Date.now() + 8 * 3600000);
@@ -1148,8 +1219,8 @@ function srFormatDate(dateStr) {
   return mon + '月' + day + '日';
 }
 
-function srCalcNextReview(mastery, round) {
-  const intervals = SR_INTERVALS[mastery] || SR_INTERVALS[1];
+function srCalcNextReview(mastery, round, subject) {
+  const intervals = srGetIntervals(subject, mastery);
   if (round >= intervals.length) return null;
   const d = new Date();
   d.setDate(d.getDate() + intervals[round]);
@@ -1158,7 +1229,7 @@ function srCalcNextReview(mastery, round) {
 
 function srApplyFeedback(item, result) {
   const mastery = item.mastery != null ? item.mastery : 1;
-  const intervals = SR_INTERVALS[mastery] || SR_INTERVALS[1];
+  const intervals = srGetIntervals(item.subject, mastery);
   const maxRound = intervals.length;
   let round = item.srRound || 0;
 
@@ -1168,7 +1239,7 @@ function srApplyFeedback(item, result) {
   else if (result === 'shaky') { newMastery = Math.min(mastery, 1); } // 最多保持模糊
   else if (result === 'solid') { round = round + 1; newMastery = mastery; }
 
-  const nextReview = srCalcNextReview(newMastery, round);
+  const nextReview = srCalcNextReview(newMastery, round, item.subject);
   const mastered   = (result === 'solid' && round >= maxRound);
   if (mastered) newMastery = 2;
 
@@ -1197,14 +1268,22 @@ function srOpenSheet(item) {
   const sheet   = document.getElementById('sr-sheet');
   if (!overlay || !sheet) return;
 
-  document.getElementById('sr-sheet-subject').textContent =
-    item.subject + (item.type ? ' · ' + item.type : '') + (item.source ? '  来源：' + item.source : '');
+  document.getElementById('sr-sheet-subject').innerHTML =
+    esc(item.subject + (item.type ? ' · ' + item.type : '') + (item.source ? '  来源：' + item.source : ''))
+    + `&nbsp;<button class="icon-btn star-btn${item.starred ? ' starred' : ''}" style="font-size:15px;vertical-align:middle;padding:2px 5px;" onclick="toggleStar('${item.id}');this.classList.toggle('starred');this.querySelector('i').className='ti '+(this.classList.contains('starred')?'ti-star-filled':'ti-star');" title="星标"><i class="ti ${item.starred ? 'ti-star-filled' : 'ti-star'}"></i></button>`;
 
 // Body sections（错因和解析默认折叠）
   let bodyHtml = '';
   if (item.question) {
     bodyHtml += '<div class="sr-sheet-section"><div class="sr-sheet-label">题目</div>'
       + '<div class="sr-sheet-body">' + item.question + '</div></div>';
+  }
+  if (item.relatedIds && item.relatedIds.length) {
+    const links = item.relatedIds.map(rid => {
+      const r = db.find(x => x.id === rid);
+      return r ? `<span class="related-item-link" onclick="srCloseSheet();jumpToQuestion('${r.id}')">${esc(r.subject)} · ${esc(r.type)}</span>` : '';
+    }).join('');
+    bodyHtml += `<div class="sr-sheet-section"><div class="sr-sheet-label">相关题目</div><div class="related-items">${links}</div></div>`;
   }
   if (item.options && item.options.length > 0 && item.srStatus !== 'mastered') {
     bodyHtml += _buildSrOptionsPicker(item.options, item.id, 'sheet');
@@ -1559,7 +1638,7 @@ function _bindSrOptionsPicker(mode, item) {
 // 初始化新错题的 srNextReview（如果还没有的话）
 function srEnsureInit(item) {
   if (item.srNextReview || item.srStatus === 'mastered') return item;
-  return { ...item, srRound: 0, srNextReview: srCalcNextReview(item.mastery || 0, 0), srStatus: 'new', srCount: 0 };
+  return { ...item, srRound: 0, srNextReview: srCalcNextReview(item.mastery || 0, 0, item.subject), srStatus: 'new', srCount: 0 };
 }
 
 function jumpToReviewItem(id) {
@@ -1707,13 +1786,25 @@ async function deleteImageFromR2(url) {
  // 扫描 el 内所有 base64 img，上传到 R2 并替换 src；返回处理后的 innerHTML
 async function uploadBase64ImgsInEl(el) {
   const imgs = [...el.querySelectorAll('img')].filter(img => img.src.startsWith('data:'));
-  await Promise.all(imgs.map(async img => {
-    try {
-      img.src = await uploadImageToR2(img.src);
-    } catch {
-      // 上传失败保留 base64，不阻断保存
+  if (!imgs.length) return el.innerHTML;
+  const MAX_CONCURRENT = 3;
+  let running = 0;
+  const queue = [];
+  function dequeue() {
+    while (running < MAX_CONCURRENT && queue.length) {
+      const { task, resolve } = queue.shift();
+      running++;
+      task().then(resolve).catch(resolve).finally(() => { running--; dequeue(); });
     }
-  }));
+  }
+  function limit(task) {
+    return new Promise(resolve => { queue.push({ task, resolve }); dequeue(); });
+  }
+  await Promise.all(imgs.map(img =>
+    limit(async () => {
+      try { img.src = await uploadImageToR2(img.src); } catch { /* 上传失败保留 base64 */ }
+    })
+  ));
   return el.innerHTML;
 }
 let subjectTypeConfig = {};
@@ -1842,14 +1933,17 @@ function renderManage() {
   container.innerHTML = subjects.map(subj => {
     const types = subjectTypeConfig[subj] || [];
     const typesHtml = types.length ? types.map(t => `<span class="manage-type-tag" data-subj="${esc(subj)}" data-type="${esc(t)}"><span class="manage-type-name">${esc(t)}</span><button class="manage-type-del" data-action="del-type" data-subj="${esc(subj)}" data-type="${esc(t)}">&times;</button></span>`).join('') : '<span style="font-size:12px;color:var(--text-hint);">暂无题型</span>';
-    return `<div class="manage-subject-block"><div class="manage-subject-header"><span class="manage-subject-name"><i class="ti ti-books"></i> ${esc(subj)}</span><div class="manage-subject-actions"><button class="icon-btn" data-action="edit-subj" data-subj="${esc(subj)}" title="重命名"><i class="ti ti-edit"></i></button><button class="icon-btn" data-action="del-subj" data-subj="${esc(subj)}" title="删除科目"><i class="ti ti-trash"></i></button></div></div><div class="manage-types">${typesHtml}<span class="manage-add-type" data-action="add-type" data-subj="${esc(subj)}">+ 添加题型</span></div></div>`;
+    const customIntervals = srSubjectIntervals[subj];
+    const intervalHint = customIntervals ? customIntervals.join(',') : '默认';
+    return `<div class="manage-subject-block"><div class="manage-subject-header"><span class="manage-subject-name"><i class="ti ti-books"></i> ${esc(subj)}</span><div class="manage-subject-actions"><button class="icon-btn" data-action="set-interval" data-subj="${esc(subj)}" title="设置复习间隔（当前：${esc(intervalHint)}）" style="font-size:13px;padding:4px 7px;gap:2px;display:inline-flex;align-items:center;">⏱<span style="font-size:11px;color:var(--text-hint);margin-left:1px">${esc(intervalHint)}</span></button><button class="icon-btn" data-action="edit-subj" data-subj="${esc(subj)}" title="重命名"><i class="ti ti-edit"></i></button><button class="icon-btn" data-action="del-subj" data-subj="${esc(subj)}" title="删除科目"><i class="ti ti-trash"></i></button></div></div><div class="manage-types">${typesHtml}<span class="manage-add-type" data-action="add-type" data-subj="${esc(subj)}">+ 添加题型</span></div></div>`;
   }).join('');
 }
 document.getElementById('manage-content').addEventListener('click', async function(e) {
   const target = e.target.closest('[data-action]');
   if (!target) return;
   const {action, subj, type} = target.dataset;
-  if (action === 'add-type') promptAddType(subj);
+  if (action === 'set-interval') promptSetSubjectInterval(subj);
+  else if (action === 'add-type') promptAddType(subj);
   else if (action === 'del-type') {
     const ok = await uiConfirm('确认从"' + subj + '"中删除题型"' + type + '"？', { title: '删除题型', icon: 'ti-trash', iconClass: 'danger', confirmLabel: '确认删除' });
     if (!ok) return;
@@ -1891,6 +1985,85 @@ document.getElementById('manage-content').addEventListener('dblclick', async fun
   // 执行更新
   await updateTypeName(subject, oldType, trimmed);
 });
+
+function promptSetSubjectInterval(subj) {
+  const current = srSubjectIntervals[subj] || null;
+  // 默认展示值：有自定义则用自定义，否则展示未掌握的默认值供参考
+  const displayVals = current || [1, 3, 7, 14, 30];
+
+  // 构建弹层 HTML（复用 dlg-box 样式，但内容完全自定义）
+  const overlay = document.getElementById('dlg-overlay');
+  const box = overlay.querySelector('.dlg-box');
+
+  box.innerHTML = `
+    <div class="dlg-icon info"><i class="ti ti-clock"></i></div>
+    <div class="dlg-title">复习间隔设置 · ${esc(subj)}</div>
+    <div class="dlg-msg" style="margin-bottom:1rem">
+      每道错题会按顺序经历多轮复习，设置每轮距上次复习间隔的天数。<br>
+      轮数越多、间隔越长，遗忘曲线效果越好。<br>
+      <span style="color:var(--text-hint);font-size:11px">参考默认值：1, 3, 7, 14, 30（共5轮）</span>
+    </div>
+    <div id="sri-rows" style="display:flex;flex-direction:column;gap:8px;margin-bottom:1rem;"></div>
+    <div style="display:flex;gap:8px;margin-bottom:1.25rem;">
+      <button type="button" class="btn" style="font-size:12px;padding:5px 12px;" onclick="_sriAddRow()">
+        <i class="ti ti-plus"></i> 添加一轮
+      </button>
+      <button type="button" class="btn" style="font-size:12px;padding:5px 12px;color:var(--text-hint);" onclick="_sriReset()">
+        <i class="ti ti-refresh"></i> 恢复默认
+      </button>
+    </div>
+    <div class="dlg-footer">
+      <button class="btn" onclick="_sriCancel()">取消</button>
+      <button class="btn btn-primary" onclick="_sriSave('${esc(subj).replace(/'/g,"\\'")}')" >
+        <i class="ti ti-check"></i> 保存
+      </button>
+    </div>
+  `;
+
+  // 渲染各轮行
+  function renderRows(vals) {
+    const container = document.getElementById('sri-rows');
+    if (!container) return;
+    container.innerHTML = vals.map((v, i) => `
+      <div class="sri-row" style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:12px;color:var(--text-secondary);width:44px;flex-shrink:0;text-align:right;">第${i+1}轮</span>
+        <input type="number" min="1" max="365" value="${v}"
+          style="width:72px;font-size:14px;padding:6px 9px;border-radius:var(--radius-md);border:1px solid var(--border-mid);background:var(--bg-secondary);color:var(--text-primary);font-family:inherit;text-align:center;"
+          oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+        />
+        <span style="font-size:12px;color:var(--text-secondary);">天后复习</span>
+        ${vals.length > 1
+          ? `<button type="button" onclick="_sriRemoveRow(${i})"
+               style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--text-hint);font-size:16px;line-height:1;padding:2px 4px;border-radius:4px;"
+               title="删除此轮">×</button>`
+          : ''}
+      </div>
+    `).join('');
+  }
+
+  // 读取当前行的值
+  function getRowVals() {
+    return [...document.querySelectorAll('.sri-row input')].map(el => parseInt(el.value, 10) || 1);
+  }
+
+  window._sriAddRow = () => { renderRows([...getRowVals(), 7]); };
+  window._sriRemoveRow = (idx) => { const v = getRowVals(); v.splice(idx, 1); renderRows(v); };
+  window._sriReset = () => { renderRows([1, 3, 7, 14, 30]); };
+  window._sriCancel = () => { overlay.classList.remove('open'); if (_dlgResolve) { _dlgResolve = null; } };
+  window._sriSave = async (s) => {
+    const days = getRowVals().filter(n => n > 0);
+    if (!days.length) { return; }
+    srSubjectIntervals[s] = days;
+    await saveSrSubjectIntervals();
+    overlay.classList.remove('open');
+    _dlgResolve = null;
+    renderManage();
+  };
+
+  renderRows(displayVals);
+  overlay.classList.add('open');
+}
+
 async function promptAddSubject() {
   const name = await uiPrompt('请输入新科目名称：', { title: '添加科目', icon: 'ti-books' });
   if (!name || !name.trim()) return;
@@ -1934,6 +2107,7 @@ function cardHTML(d) {
         ${d.source ? `<p class="source-text">来源：${esc(d.source)}</p>` : ''}
       </div>
       <div class="card-actions">
+        <button class="icon-btn star-btn${d.starred ? ' starred' : ''}" title="${d.starred ? '取消星标' : '加星标'}" onclick="toggleStar('${d.id}', event)"><i class="ti ${d.starred ? 'ti-star-filled' : 'ti-star'}"></i></button>
         <button class="icon-btn" title="编辑" onclick="editItem('${d.id}')"><i class="ti ti-edit"></i></button>
         <button class="icon-btn" title="删除" onclick="deleteItem('${d.id}')"><i class="ti ti-trash"></i></button>
       </div>
@@ -1946,6 +2120,7 @@ function cardHTML(d) {
     <div class="content-box">${lazyImgs(d.solution)}</div>
     ${d.solutionImg ? renderImageWithViewer(d.solutionImg, '解析图片') : ''}
     ${d.tags&&d.tags.length ? `<div class="tags">${d.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
+    ${d.relatedIds && d.relatedIds.length ? `<div style="margin-top:6px"><span style="font-size:11px;color:var(--text-hint)">相关题目：</span><div class="related-items">${d.relatedIds.map(rid=>{ const r=db.find(x=>x.id===rid); return r ? `<span class="related-item-link" onclick="jumpToQuestion('${r.id}')">${esc(r.subject)} · ${esc(r.type)}</span>` : ''; }).join('')}</div></div>` : ''}
     <div class="review-row"><span class="review-info"><i class="ti ti-calendar" style="vertical-align:-2px"></i> ${dateStr}</span>
       <div class="mastery-btns">
         <button class="m-btn ${d.mastery===0?'active-0':''}" onclick="setMastery('${d.id}',0)">未掌握</button>
@@ -1965,6 +2140,7 @@ function renderList() {
     if (subj && d.subject !== subj) return false;
     if (type && d.type !== type) return false;
     if (mastery !== '' && String(d.mastery) !== mastery) return false;
+    if (document.getElementById('filter-starred')?.checked && !d.starred) return false;
     if (q) { const hay = (d.question+d.solution+(d.tags||[]).join()+d.subject+d.type).toLowerCase(); if (!hay.includes(q)) return false; }
     return true;
   }).sort((a,b) => b.date - a.date);
@@ -2038,6 +2214,20 @@ function renderReview() {
       if (item) srOpenSheet(srEnsureInit(item));
     });
   });
+
+  // 今日复习统计横幅
+  const statsEl = document.getElementById('sr-today-stats');
+  if (statsEl) {
+    const today = srTodayStr();
+    const dueCount = db.filter(d => d.srStatus !== 'mastered' && d.srNextReview && d.srNextReview <= today).length;
+    const doneToday = db.filter(d => d.srLastReview === today).length;
+    const masteredTotal = db.filter(d => d.srStatus === 'mastered').length;
+    statsEl.innerHTML = `
+      <div class="stat-card"><div class="stat-val" style="color:var(--danger-text)">${dueCount}</div><div class="stat-lbl">今日待复习</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--success-text)">${doneToday}</div><div class="stat-lbl">今日已完成</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--info-text)">${masteredTotal}</div><div class="stat-lbl">已掌握总数</div></div>
+    `;
+  }
 }
 function barChart(container, data) {
   if (!data.length) { container.innerHTML = '<p style="font-size:13px;color:var(--text-secondary)">暂无数据</p>'; return; }
@@ -2122,6 +2312,9 @@ function openModal() {
   document.getElementById('f-source').value = '';
   populateSubjectSelect(null);
   populateTypeSelect(null);
+  _relatedIds = [];
+  _renderRelatedPills();
+  const rs = document.getElementById('f-related-search'); if (rs) rs.value = '';
   setOptionsData([
     { key: 'A', content: '', isWrong: false, isCorrect: false },
     { key: 'B', content: '', isWrong: false, isCorrect: false },
@@ -2149,6 +2342,9 @@ function editItem(id) {
   populateSubjectSelect(item.subject);
   populateTypeSelect(item.type);
   setOptionsData(item.options || null);
+  _relatedIds = [...(item.relatedIds || [])];
+  _renderRelatedPills();
+  const rs = document.getElementById('f-related-search'); if (rs) rs.value = '';
   document.getElementById('modal-overlay').classList.add('open');
 }
 async function saveItem() {
@@ -2171,6 +2367,7 @@ async function saveItem() {
     tags: getTagPills(),
     source: document.getElementById('f-source').value.trim(),
     options: getOptionsData(),
+    relatedIds: [..._relatedIds],
   };
   if (editId) {
     const idx = db.findIndex(d=>d.id===editId);
@@ -2489,8 +2686,15 @@ function buildToolbar(toolbarEl, editorEl) {
 
   const clearBtn = makeBtn('<i class="ti ti-clear-formatting"></i>', '清除格式', () => { editorEl.focus(); document.execCommand('removeFormat', false, null); updateActiveStates(); });
 
-  [boldBtn, italicBtn, underlineBtn, sep1, colorWrap, sep2, clearBtn].forEach(el => toolbarEl.appendChild(el));
+  const sep3 = document.createElement('span'); sep3.className = 'rte-sep';
+  const formulaBtn = makeBtn('∑', '插入公式 (KaTeX)', () => {
+    editorEl.focus();
+    document.execCommand('insertText', false, '$$公式$$');
+    renderNotesKaTeX(editorEl);
+  });
+  formulaBtn.style.cssText = 'font-size:15px;font-weight:600;width:28px;';
 
+  [boldBtn, italicBtn, underlineBtn, sep1, colorWrap, sep2, clearBtn, sep3, formulaBtn].forEach(el => toolbarEl.appendChild(el));
   function updateActiveStates() {
     boldBtn.classList.toggle('active', document.queryCommandState('bold'));
     italicBtn.classList.toggle('active', document.queryCommandState('italic'));
@@ -2500,6 +2704,110 @@ function buildToolbar(toolbarEl, editorEl) {
   editorEl.addEventListener('keyup', updateActiveStates);
   editorEl.addEventListener('mouseup', updateActiveStates);
   editorEl.addEventListener('selectionchange', updateActiveStates);
+}
+
+function renderNotesKaTeX(el) {
+  if (!el || typeof window.renderMathInElement === 'undefined') return;
+  try {
+    window.renderMathInElement(el, {
+      delimiters: [{ left: '$$', right: '$$', display: false }],
+      throwOnError: false,
+    });
+  } catch(e) { /* ignore */ }
+}
+
+function toggleNotesExportMenu() {
+  const menu = document.getElementById('notes-export-menu');
+  if (!menu) return;
+  menu.style.display = menu.style.display === 'none' ? '' : 'none';
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('#notes-export-wrap')) {
+    const menu = document.getElementById('notes-export-menu');
+    if (menu) menu.style.display = 'none';
+  }
+});
+
+function htmlToMd(html) {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  function walk(node) {
+    if (node.nodeType === 3) return node.textContent;
+    if (node.nodeType !== 1) return '';
+    const tag = node.tagName.toLowerCase();
+    const inner = () => [...node.childNodes].map(walk).join('');
+    if (tag === 'br') return '\n';
+    if (tag === 'p' || tag === 'div') return inner() + '\n\n';
+    if (tag === 'b' || tag === 'strong') return '**' + inner() + '**';
+    if (tag === 'i' || tag === 'em') return '*' + inner() + '*';
+    if (tag === 'u') return '__' + inner() + '__';
+    if (tag === 'h1') return '# ' + inner() + '\n\n';
+    if (tag === 'h2') return '## ' + inner() + '\n\n';
+    if (tag === 'h3') return '### ' + inner() + '\n\n';
+    if (tag === 'ul') return [...node.children].map(li => '- ' + walk(li).trim()).join('\n') + '\n\n';
+    if (tag === 'ol') return [...node.children].map((li, i) => (i+1) + '. ' + walk(li).trim()).join('\n') + '\n\n';
+    if (tag === 'li') return inner();
+    if (tag === 'img') {
+      const alt = node.alt || '图片';
+      const src = node.src || '';
+      return `![${alt}](${src})`;
+    }
+    if (tag === 'a') return `[${inner()}](${node.href || ''})`;
+    if (tag === 'code') return '`' + inner() + '`';
+    if (tag === 'pre') return '```\n' + inner() + '\n```\n\n';
+    if (tag === 'span' && node.classList.contains('katex')) {
+      // Try to recover original $$...$$ from data-original or textContent
+      return node.dataset.original ? '$$' + node.dataset.original + '$$' : node.textContent;
+    }
+    return inner();
+  }
+  return walk(div).replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function exportNoteAsMarkdown() {
+  if (!currentNoteTag) return;
+  const editor = document.getElementById('notes-content-editor');
+  const md = '# ' + currentNoteTag + '\n\n' + htmlToMd(editor.innerHTML);
+  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = currentNoteTag.replace(/[\/\\?%*:|"<>]/g, '_') + '.md';
+  a.click();
+  URL.revokeObjectURL(url);
+  document.getElementById('notes-export-menu').style.display = 'none';
+}
+
+function exportNoteAsPDF() {
+  if (!currentNoteTag) return;
+  const editor = document.getElementById('notes-content-editor');
+  const content = editor.innerHTML;
+  const tag = currentNoteTag;
+
+  const printStyle = document.createElement('style');
+  printStyle.id = '__print_style__';
+  printStyle.innerHTML = `
+    @media print {
+      body > *:not(#__print_root__) { display: none !important; }
+      #__print_root__ { display: block !important; font-family: -apple-system, sans-serif; padding: 2rem; }
+      #__print_root__ h1 { font-size: 20px; margin-bottom: 1rem; }
+      #__print_root__ img { max-width: 100%; }
+    }
+  `;
+  document.head.appendChild(printStyle);
+
+  const root = document.createElement('div');
+  root.id = '__print_root__';
+  root.innerHTML = `<h1>${esc(tag)}</h1><div>${content}</div>`;
+  document.body.appendChild(root);
+
+  window.print();
+
+  setTimeout(() => {
+    document.head.removeChild(printStyle);
+    document.body.removeChild(root);
+  }, 1000);
+  document.getElementById('notes-export-menu').style.display = 'none';
 }
 
 function initEditorWrap(wrapId, editorId, toolbarId) {
@@ -2565,13 +2873,23 @@ async function promptCreateNoteTag() {
     selectNoteTag(trimmed);
     return;
   }
+  // Ask parent
+  let parentTag = null;
+  const allTags = getAllTags();
+  if (allTags.length > 0) {
+    const parentName = await uiPrompt('作为哪个知识点的子级？（留空则为顶级）', {
+      title: '设置层级（可选）', icon: 'ti-sitemap', defaultVal: ''
+    });
+    if (parentName && parentName.trim() && allTags.includes(parentName.trim())) {
+      parentTag = parentName.trim();
+    }
+  }
   if (!standaloneTags.includes(trimmed)) {
     standaloneTags.push(trimmed);
     saveStandaloneTags();
   }
-  // 推断默认科目：取关联错题中出现最多的科目
   const defaultSubject = _inferTagSubject(trimmed) || '';
-  const noteObj = { content: '', updatedAt: Date.now(), subject: defaultSubject };
+  const noteObj = { content: '', updatedAt: Date.now(), subject: defaultSubject, parentTag };
   notesDb[trimmed] = noteObj;
   await saveNoteToIDB(trimmed, noteObj);
   renderNotesTagList();
@@ -2630,6 +2948,17 @@ async function renameCurrentNoteTag() {
   renderAll();
 }
 
+// ========================= 星标 =========================
+async function toggleStar(id, e) {
+  e && e.stopPropagation();
+  const item = db.find(d => d.id === id);
+  if (!item) return;
+  item.starred = !item.starred;
+  await saveToIDB(item);
+  renderList();
+  afterDataChange();
+}
+
 function saveStandaloneTags() {
   localStorage.setItem('qb_standalone_tags', JSON.stringify(standaloneTags));
 }
@@ -2665,7 +2994,6 @@ function renderNotesTagList() {
 
   let tags = getAllTags();
 
-  // 按科目过滤
   if (filterSubject) {
     tags = tags.filter(tag => {
       const subj = (notesDb[tag] && notesDb[tag].subject) || _inferTagSubject(tag);
@@ -2673,12 +3001,10 @@ function renderNotesTagList() {
     });
   }
 
-  // 按关键词过滤（匹配标签名或笔记内容纯文本）
   if (searchQ) {
     tags = tags.filter(tag => {
       if (tag.toLowerCase().includes(searchQ)) return true;
       const content = notesDb[tag]?.content || '';
-      // 去掉 HTML 标签后搜索
       const plain = content.replace(/<[^>]+>/g, '').toLowerCase();
       return plain.includes(searchQ);
     });
@@ -2692,19 +3018,88 @@ function renderNotesTagList() {
     return;
   }
 
-  container.innerHTML = tags.map(tag => {
+  // Build parent→children map
+  const childrenMap = {}; // parentTag -> [tag, ...]
+  const roots = [];
+  tags.forEach(tag => {
+    const parent = notesDb[tag]?.parentTag || null;
+    if (parent && tags.includes(parent)) {
+      if (!childrenMap[parent]) childrenMap[parent] = [];
+      childrenMap[parent].push(tag);
+    } else {
+      roots.push(tag);
+    }
+  });
+
+let _draggedTag = null;
+
+function onTagDragStart(event, tag) {
+  _draggedTag = tag;
+  event.dataTransfer.effectAllowed = 'move';
+  event.currentTarget.style.opacity = '0.5';
+}
+
+function onTagDragOver(event) {
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'move';
+  event.currentTarget.style.background = 'var(--info-bg)';
+}
+
+function onTagDragLeave(event) {
+  event.currentTarget.style.background = '';
+}
+
+async function onTagDrop(event, targetTag) {
+  event.preventDefault();
+  event.currentTarget.style.background = '';
+  if (!_draggedTag || _draggedTag === targetTag) { _draggedTag = null; return; }
+  // Prevent circular: don't allow dropping onto own descendant
+  function isDescendant(ancestor, candidate) {
+    const children = Object.keys(notesDb).filter(t => notesDb[t]?.parentTag === ancestor);
+    return children.some(c => c === candidate || isDescendant(c, candidate));
+  }
+  if (isDescendant(_draggedTag, targetTag)) { _draggedTag = null; return; }
+
+  const note = notesDb[_draggedTag] || { content: '', updatedAt: Date.now() };
+  note.parentTag = targetTag;
+  notesDb[_draggedTag] = note;
+  await saveNoteToIDB(_draggedTag, { ...note, id: _draggedTag });
+  _draggedTag = null;
+  renderNotesTagList();
+}
+
+// Reset opacity on dragend
+document.getElementById('notes-tag-list').addEventListener('dragend', e => {
+  if (e.target.classList.contains('notes-tag-item')) e.target.style.opacity = '';
+});
+
+  function renderTagNode(tag, depth) {
     const hasNote = notesDb[tag] && notesDb[tag].content && notesDb[tag].content.trim();
     const count = getTagQuestions(tag).length;
     const subj = (notesDb[tag] && notesDb[tag].subject) || _inferTagSubject(tag);
-    return `<div class="notes-tag-item${currentNoteTag === tag ? ' active' : ''}" onclick="selectNoteTag('${esc(tag).replace(/'/g, "\\'")}')">
+    const children = childrenMap[tag] || [];
+    const indent = depth * 16;
+    let html = `<div class="notes-tag-item${currentNoteTag === tag ? ' active' : ''}"
+      style="padding-left:${14 + indent}px"
+      draggable="true"
+      data-tag="${esc(tag)}"
+      onclick="selectNoteTag('${esc(tag).replace(/'/g, "\\'")}')"
+      ondragstart="onTagDragStart(event,'${esc(tag).replace(/'/g, "\\'")}')"
+      ondragover="onTagDragOver(event)"
+      ondrop="onTagDrop(event,'${esc(tag).replace(/'/g, "\\'")}')"
+      ondragleave="onTagDragLeave(event)">
       <div class="notes-tag-dot${hasNote ? ' has-note' : ''}"></div>
       <div style="flex:1;min-width:0;">
-        <div style="word-break:break-all">${esc(tag)}</div>
+        <div style="word-break:break-all">${'　'.repeat(depth)}${esc(tag)}</div>
         ${subj ? `<div style="font-size:10px;color:var(--text-hint);margin-top:1px">${esc(subj)}</div>` : ''}
       </div>
       <span class="tag-count">${count}</span>
     </div>`;
-  }).join('');
+    children.forEach(child => { html += renderTagNode(child, depth + 1); });
+    return html;
+  }
+
+  container.innerHTML = roots.map(tag => renderTagNode(tag, 0)).join('');
 }
 
 function selectNoteTag(tag) {
@@ -2755,6 +3150,8 @@ function showNoteEditor(tag) {
   // Show action buttons
   document.getElementById('notes-rename-btn').style.display = '';
   document.getElementById('notes-delete-btn').style.display = '';
+  const exportBtn = document.getElementById('notes-export-btn');
+  if (exportBtn) exportBtn.style.display = '';
 
   const editor = document.getElementById('notes-content-editor');
   editor.innerHTML = (note && note.content) || '';
@@ -2781,6 +3178,8 @@ function showNoteEditor(tag) {
     clearTimeout(_notesSaveTimer);
     _notesSaveTimer = setTimeout(() => saveCurrentNote(false), 800);
   };
+  // Initial KaTeX render
+  renderNotesKaTeX(editor);
 
   document.getElementById('notes-save-indicator').classList.remove('show');
 }
@@ -2793,6 +3192,8 @@ async function saveCurrentNote(silent) {
   const noteObj = { ...existing, content, updatedAt: Date.now() };
   notesDb[currentNoteTag] = noteObj;
   await saveNoteToIDB(currentNoteTag, noteObj);
+
+  renderNotesKaTeX(document.getElementById('notes-content-editor'));
 
   const meta = document.getElementById('notes-editor-meta');
   if (meta) meta.textContent = '最后编辑：' + new Date(noteObj.updatedAt).toLocaleString('zh-CN');
@@ -2832,7 +3233,8 @@ function switchTab(name, btn) {
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   btn.classList.add('active'); document.getElementById('page-'+name).classList.add('active');
-  if (name === 'notes') renderNotesPage();
+  if (_dirtyPages.has(name)) _renderPage(name);
+  else if (name === 'notes') renderNotesPage();
 }
 function renderAll() { renderList(); renderReview(); renderStats(); renderNotesPage(); }
 
@@ -2948,8 +3350,32 @@ function getR2Headers() {
   return { 'Content-Type': 'application/json', 'X-Auth-Token': webdavConfig.password };
 }
 
-// afterDataChange 不再触发自动同步，仅作占位保留，方便以后扩展
-function afterDataChange() { /* 已改为手动同步，无需自动触发 */ }
+const _dirtyPages = new Set();
+
+function afterDataChange() {
+  const activeTab = document.querySelector('.tab.active');
+  const activeName = activeTab?.getAttribute('onclick')?.match(/'(\w+)'/)?.[1];
+  ['list','review','notes','stats'].forEach(name => {
+    if (name !== activeName) _dirtyPages.add(name);
+  });
+}
+
+function renderAll() {
+  const activeTab = document.querySelector('.tab.active');
+  const activeName = activeTab?.getAttribute('onclick')?.match(/'(\w+)'/)?.[1] || 'list';
+  _renderPage(activeName);
+  ['list','review','notes','stats'].forEach(name => {
+    if (name !== activeName) _dirtyPages.add(name);
+  });
+}
+
+function _renderPage(name) {
+  if (name === 'list')   { renderList(); }
+  if (name === 'review') { renderReview(); }
+  if (name === 'notes')  { renderNotesPage(); }
+  if (name === 'stats')  { renderStats(); }
+  _dirtyPages.delete(name);
+}
 
 // ========================= Toast 通知系统 =========================
 function showErrorToast(title, msg) {
@@ -3043,7 +3469,8 @@ async function syncToR2() {
     notes: Object.fromEntries(
       Object.entries(notesDb).map(([k, v]) => [k, { ...v, content: stripBase64Imgs(v.content) }])
     ),
-    standaloneTags
+    standaloneTags,
+    srSubjectIntervals
   });
   const res = await fetch(webdavConfig.url, { method: 'PUT', headers, body: payload });
   if (!res.ok) throw new Error(`上传失败：HTTP ${res.status}`);
@@ -3102,6 +3529,12 @@ async function syncFromR2() {
   if (remote.standaloneTags) {
     standaloneTags = [...new Set([...standaloneTags, ...remote.standaloneTags])];
     saveStandaloneTags();
+  }
+
+  // 合并自定义复习间隔（云端优先）
+  if (remote.srSubjectIntervals) {
+    srSubjectIntervals = { ...srSubjectIntervals, ...remote.srSubjectIntervals };
+    await saveSrSubjectIntervals();
   }
 
   renderAll();
@@ -3275,6 +3708,69 @@ async function saveWebDAVConfigAndSync() {
   closeWebDAVSetup();
   await manualSync();
 }
+
+// ========================= 相关题目关联 =========================
+let _relatedIds = [];
+
+function _renderRelatedPills() {
+  const container = document.getElementById('f-related-pills');
+  if (!container) return;
+  container.innerHTML = _relatedIds.map(id => {
+    const item = db.find(d => d.id === id);
+    if (!item) return '';
+    const label = esc(item.subject) + ' · ' + esc(item.type);
+    return `<span class="related-item-link" title="${esc(item.question ? item.question.replace(/<[^>]+>/g,'').slice(0,40) : '')}">
+      ${label}
+      <button type="button" onclick="_removeRelated('${id}')" style="background:none;border:none;cursor:pointer;color:inherit;font-size:13px;line-height:1;padding:0 0 0 4px;vertical-align:middle;">&times;</button>
+    </span>`;
+  }).join('');
+}
+
+function _removeRelated(id) {
+  _relatedIds = _relatedIds.filter(r => r !== id);
+  _renderRelatedPills();
+}
+
+function searchRelatedItems(q) {
+  const dropdown = document.getElementById('related-search-dropdown');
+  const excludeId = editId || '__new__';
+  const qLow = (q || '').trim().toLowerCase();
+  const results = db
+    .filter(d => d.id !== excludeId && !_relatedIds.includes(d.id))
+    .filter(d => {
+      if (!qLow) return true;
+      const hay = ((d.subject || '') + (d.type || '') + (d.question || '').replace(/<[^>]+>/g,'') + (d.source || '')).toLowerCase();
+      return hay.includes(qLow);
+    })
+    .slice(0, 8);
+
+  if (!results.length) { dropdown.classList.remove('open'); return; }
+  dropdown.innerHTML = results.map(d =>
+    `<div class="related-search-item" data-rid="${d.id}">
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+        ${esc((d.question || d.solution || '').replace(/<[^>]+>/g,'').slice(0, 40)) || '（无题目文本）'}
+      </span>
+      <span class="rs-meta">${esc(d.subject)} · ${esc(d.type)}</span>
+    </div>`
+  ).join('');
+  dropdown.classList.add('open');
+  dropdown.querySelectorAll('.related-search-item').forEach(el => {
+    el.addEventListener('mousedown', e => {
+      e.preventDefault();
+      _relatedIds.push(el.dataset.rid);
+      _renderRelatedPills();
+      document.getElementById('f-related-search').value = '';
+      dropdown.classList.remove('open');
+    });
+  });
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#f-related-search') && !e.target.closest('#related-search-dropdown')) {
+    const d = document.getElementById('related-search-dropdown');
+    if (d) d.classList.remove('open');
+  }
+});
 
 // ========================= 初始化 =========================
 (async function init() {
