@@ -3171,7 +3171,10 @@ function showNoteEditor(tag) {
   const toolbar = document.getElementById('notes-rte-toolbar');
   buildToolbar(toolbar, editor);
 
-  setupRichEditorPaste(editor);
+  if (!editor._pasteHandlerAttached) {
+    setupRichEditorPaste(editor);
+    editor._pasteHandlerAttached = true;
+  }
 
   // Debounced auto-save
   editor.oninput = () => {
